@@ -1,0 +1,20 @@
+services:
+  rpc-content:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rpc-content:latest
+    container_name: rpc-content
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./etc:/app/etc
+    env_file:
+      - .env
+    networks:
+      - thinktalk-net
+
+networks:
+  thinktalk-net:
+    driver: bridge

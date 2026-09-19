@@ -1,0 +1,148 @@
+syntax = "proto3";
+package service;
+option go_package="./pb";
+
+service Tag {
+  // 创建标签
+  rpc CreateTag (CreateTagRequest) returns (CreateTagResponse);
+  // 更新标签
+  rpc UpdateTag (UpdateTagRequest) returns (UpdateTagResponse);
+  // 删除标签
+  rpc DeleteTag (DeleteTagRequest) returns (DeleteTagResponse);
+  // 标签详情
+  rpc TagDetail (TagDetailRequest) returns (TagDetailResponse);
+  // 标签列表
+  rpc TagList (TagListRequest) returns (TagListResponse);
+  // 热门标签
+  rpc HotTags (HotTagsRequest) returns (HotTagsResponse);
+  // 资源打标签
+  rpc TagResource (TagResourceRequest) returns (TagResourceResponse);
+  // 资源去标签
+  rpc UntagResource (UntagResourceRequest) returns (UntagResourceResponse);
+  // 标签下的资源列表
+  rpc ResourcesByTag (ResourcesByTagRequest) returns (ResourcesByTagResponse);
+  // 资源关联的标签列表
+  rpc TagsByResource (TagsByResourceRequest) returns (TagsByResourceResponse);
+}
+
+// -------------------- 标签 CRUD --------------------
+
+message CreateTagRequest {
+  string tagName = 1; // 标签名
+  string tagDesc = 2; // 标签描述
+}
+
+message CreateTagResponse {
+  int64 tagId = 1; // 标签ID
+}
+
+message UpdateTagRequest {
+  int64 tagId = 1;   // 标签ID
+  string tagName = 2; // 标签名
+  string tagDesc = 3; // 标签描述
+}
+
+message UpdateTagResponse {
+}
+
+message DeleteTagRequest {
+  int64 tagId = 1; // 标签ID
+}
+
+message DeleteTagResponse {
+}
+
+message TagDetailRequest {
+  int64 tagId = 1; // 标签ID
+}
+
+message TagDetailResponse {
+  int64 tagId = 1;       // 标签ID
+  string tagName = 2;     // 标签名
+  string tagDesc = 3;     // 标签描述
+  int64 resourceCount = 4; // 关联资源数
+  int64 createTime = 5;   // 创建时间
+}
+
+// -------------------- 标签列表 --------------------
+
+message TagListRequest {
+  int64 cursor = 1;    // 游标
+  int64 pageSize = 2;  // 页大小
+}
+
+message TagItem {
+  int64 tagId = 1;         // 标签ID
+  string tagName = 2;       // 标签名
+  string tagDesc = 3;       // 标签描述
+  int64 resourceCount = 4;  // 关联资源数
+  int64 createTime = 5;     // 创建时间
+}
+
+message TagListResponse {
+  repeated TagItem items = 1; // 标签列表
+  int64 cursor = 2;           // 下一页游标
+  bool isEnd = 3;             // 是否最后一页
+}
+
+// -------------------- 热门标签 --------------------
+
+message HotTagsRequest {
+  int32 limit = 1; // 数量上限
+}
+
+message HotTagsResponse {
+  repeated TagItem items = 1; // 热门标签列表
+}
+
+// -------------------- 资源-标签关联 --------------------
+
+message TagResourceRequest {
+  string bizId = 1;    // 业务ID (如 "article" / "qa")
+  int64 targetId = 2;  // 资源ID
+  int64 tagId = 3;     // 标签ID
+  int64 userId = 4;    // 操作用户ID
+}
+
+message TagResourceResponse {
+}
+
+message UntagResourceRequest {
+  string bizId = 1;    // 业务ID
+  int64 targetId = 2;  // 资源ID
+  int64 tagId = 3;     // 标签ID
+  int64 userId = 4;    // 操作用户ID
+}
+
+message UntagResourceResponse {
+}
+
+// -------------------- 资源-标签查询 --------------------
+
+message ResourcesByTagRequest {
+  int64 tagId = 1;     // 标签ID
+  string bizId = 2;    // 业务ID (为空则查询所有业务)
+  int64 cursor = 3;    // 游标
+  int64 pageSize = 4;  // 页大小
+}
+
+message ResourceItem {
+  int64 targetId = 1;  // 资源ID
+  string bizId = 2;    // 业务ID
+  int64 createTime = 3; // 打标签时间
+}
+
+message ResourcesByTagResponse {
+  repeated ResourceItem items = 1; // 资源列表
+  int64 cursor = 2;                // 下一页游标
+  bool isEnd = 3;                  // 是否最后一页
+}
+
+message TagsByResourceRequest {
+  string bizId = 1;    // 业务ID
+  int64 targetId = 2;  // 资源ID
+}
+
+message TagsByResourceResponse {
+  repeated TagItem items = 1; // 标签列表
+}

@@ -1,0 +1,167 @@
+syntax = "proto3";
+
+package service;
+option go_package="./pb";
+
+service QA {
+  // 发布问题
+  rpc PublishQuestion (PublishQuestionRequest) returns (PublishQuestionResponse);
+  // 回答
+  rpc AnswerQuestion (AnswerQuestionRequest) returns (AnswerQuestionResponse);
+  // 采纳回答
+  rpc AcceptAnswer (AcceptAnswerRequest) returns (AcceptAnswerResponse);
+  // 问题列表
+  rpc Questions (QuestionsRequest) returns (QuestionsResponse);
+  // 问题详情
+  rpc QuestionDetail (QuestionDetailRequest) returns (QuestionDetailResponse);
+  // 删除问题
+  rpc QuestionDelete (QuestionDeleteRequest) returns (QuestionDeleteResponse);
+  // 回答列表
+  rpc AnswerList (AnswerListRequest) returns (AnswerListResponse);
+  // 删除回答
+  rpc AnswerDelete (AnswerDeleteRequest) returns (AnswerDeleteResponse);
+  // 搜索问题
+  rpc SearchQuestions (SearchQuestionsRequest) returns (SearchQuestionsResponse);
+}
+
+// -------------------- 发布问题 --------------------
+
+message PublishQuestionRequest {
+  int64 userId = 1;
+  string title = 2;
+  string content = 3;
+  string tagIds = 4;
+}
+
+message PublishQuestionResponse {
+  int64 questionId = 1;
+}
+
+// -------------------- 回答 --------------------
+
+message AnswerQuestionRequest {
+  int64 questionId = 1;
+  int64 userId = 2;
+  string content = 3;
+}
+
+message AnswerQuestionResponse {
+  int64 answerId = 1;
+}
+
+// -------------------- 采纳 --------------------
+
+message AcceptAnswerRequest {
+  int64 questionId = 1;
+  int64 answerId = 2;
+  int64 userId = 3;
+}
+
+message AcceptAnswerResponse {
+}
+
+// -------------------- 问题列表 --------------------
+
+message QuestionsRequest {
+  int64 userId = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+  int32 sortType = 4; // 0:按时间 1:按热度
+}
+
+message QuestionItem {
+  int64 id = 1;
+  string title = 2;
+  string content = 3;
+  int64 authorId = 4;
+  int64 answerNum = 5;
+  int64 viewNum = 6;
+  string tagIds = 7;
+  int64 createTime = 8;
+}
+
+message QuestionsResponse {
+  repeated QuestionItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+  int64 questionId = 4;
+}
+
+// -------------------- 问题详情 --------------------
+
+message QuestionDetailRequest {
+  int64 questionId = 1;
+}
+
+message QuestionDetailResponse {
+  QuestionItem question = 1;
+}
+
+// -------------------- 删除问题 --------------------
+
+message QuestionDeleteRequest {
+  int64 userId = 1;
+  int64 questionId = 2;
+}
+
+message QuestionDeleteResponse {
+}
+
+// -------------------- 回答列表 --------------------
+
+message AnswerListRequest {
+  int64 questionId = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+}
+
+message AnswerItem {
+  int64 id = 1;
+  int64 questionId = 2;
+  int64 authorId = 3;
+  string content = 4;
+  bool isAccepted = 5;
+  int64 likeNum = 6;
+  int64 replyNum = 7;
+  int64 createTime = 8;
+}
+
+message AnswerListResponse {
+  repeated AnswerItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
+
+// -------------------- 删除回答 --------------------
+
+message AnswerDeleteRequest {
+  int64 userId = 1;
+  int64 answerId = 2;
+}
+
+message AnswerDeleteResponse {
+}
+
+// -------------------- 搜索问题 --------------------
+
+message SearchQuestionsRequest {
+  string keyword = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+}
+
+message SearchQuestionItem {
+  int64 id = 1;
+  string title = 2;
+  string content = 3;
+  int64 authorId = 4;
+  int64 answerNum = 5;
+  string tagIds = 6;
+  int64 createTime = 7;
+}
+
+message SearchQuestionsResponse {
+  repeated SearchQuestionItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}

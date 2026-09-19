@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package pb;
+option go_package="./pb";
+
+service Article {
+  rpc Publish(PublishRequest) returns (PublishResponse);
+  rpc Articles(ArticlesRequest) returns (ArticlesResponse);
+  rpc ArticleDelete(ArticleDeleteRequest) returns (ArticleDeleteResponse);
+  rpc ArticleDetail(ArticleDetailRequest) returns (ArticleDetailResponse);
+  rpc SearchArticles(SearchRequest) returns (SearchResponse);
+  rpc AdminPendingList(AdminPendingListRequest) returns (AdminPendingListResponse);
+  rpc AdminAudit(AdminAuditRequest) returns (AdminAuditResponse);
+}
+
+message PublishRequest {
+  int64 userId = 1;
+  string title = 2;
+  string content = 3;
+  string description = 4;
+  string cover = 5;
+  repeated int64 tagIds = 6;
+}
+
+message PublishResponse {
+  int64 articleId = 1;
+}
+
+message ArticlesRequest {
+  int64 userId = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+  int32 sortType = 4;
+  int64 articleId = 5;
+}
+
+message ArticleItem {
+  int64 Id = 1;
+  string title = 2;
+  string content = 3;
+  string description = 4;
+  string cover = 5;
+  int64 commentCount = 6;
+  int64 likeCount = 7;
+  int64 publishTime = 8;
+  int64 authorId = 9;
+  int64 status = 10;
+}
+
+message ArticlesResponse {
+  repeated ArticleItem articles = 1;
+  bool isEnd = 2;
+  int64 cursor = 3;
+  int64 articleId = 4;
+}
+
+message ArticleDeleteRequest {
+  int64 userId = 1;
+  int64 articleId = 2;
+}
+
+message ArticleDeleteResponse {
+}
+
+message ArticleDetailRequest {
+  int64 articleId = 1;
+}
+
+message ArticleDetailResponse {
+  ArticleItem article = 1;
+}
+
+message SearchRequest {
+  string keyword = 1;  // 搜索关键词
+  int64 cursor = 2;    // 游标
+  int64 pageSize = 3;  // 页大小
+  int32 sortType = 4;
+}
+
+message SearchItem {
+  int64 articleId = 1;
+  string title = 2;
+  string description = 3;
+  string cover = 4;
+  int64 authorId = 5;
+  string authorName = 6;
+  int64 likeNum = 7;
+  int64 commentNum = 8;
+  string publishTime = 9;
+  string authorAvatar = 10;
+}
+
+message SearchResponse {
+  repeated SearchItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
+
+message AdminPendingListRequest {
+  int64 cursor = 1;
+  int64 pageSize = 2;
+}
+
+message AdminPendingListResponse {
+  repeated SearchItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
+
+message AdminAuditRequest {
+  int64 articleId = 1;
+  int32 status = 2; // 2: approve, 1: reject
+}
+
+message AdminAuditResponse {
+}

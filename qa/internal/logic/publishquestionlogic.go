@@ -1,0 +1,65 @@
+package logic
+
+import (
+	"context"
+	"fmt"
+	"strconv"
+	"time"
+
+	"rpc-content/qa/code"
+	"rpc-content/qa/internal/model"
+	"rpc-content/qa/internal/svc"
+	"rpc-content/qa/internal/types"
+	"rpc-content/qa/pb"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type PublishQuestionLogic struct {
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+	logx.Logger
+}
+
+func NewPublishQuestionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *PublishQuestionLogic {
+	return &PublishQuestionLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
+}
+
+func (l *PublishQuestionLogic) PublishQuestion(in *pb.PublishQuestionRequest) (*pb.PublishQuestionResponse, error) {
+	if in.UserId <= 0 {
+		return nil, code.UserIdInvalid
+	}
+	if len(in.Title) == 0 {
+		return nil, code.TitleEmpty
+	}
+	if len(in.Content) == 0 {
+		return nil, code.ContentEmpty
+	}
+
+	q := &model.Question{
+		Title:      in.Title,
+		Content:    in.Content,
+		AuthorID:   in.UserId,
+		TagIds:     in.TagIds,
+		Status:     types.QuestionStatusNormal,
+		CreateTime: time.Now(),
+		UpdateTime: time.Now(),
+	}
+	if err := l.svcCtx.QuestionModel.Insert(l.ctx, q); err != nil {
+		l.Errorf("[PublishQuestion] Insert err: %v req: %+v", err, in)
+		return nil, err
+	}
+
+	key := questionsKey(in.UserId, types.SortPublishTime)
+	b, _ := l.svcCtx.BizRedis.ExistsCtx(l.ctx, key)
+	if b {
+		_, _ = l.svcCtx.BizRedis.ZaddCtx(l.ctx, key, time.Now().Unix(), strconv.FormatInt(q.ID, 10))
+		_ = l.svcCtx.BizRedis.ExpireCtx(l.ctx, key, types.CacheExpireTime)
+	}
+
+	return &pb.PublishQuestionResponse{QuestionId: q.ID}, nil
+}
+
+func questionsKey(uid int64, sortType int32) string {
+	return fmt.Sprintf("biz#questions#%d#%d", uid, sortType)
+}

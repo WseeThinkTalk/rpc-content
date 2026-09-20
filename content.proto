@@ -1,0 +1,476 @@
+syntax = "proto3";
+
+package content;
+option go_package = "./content";
+
+// --------------------------- 文章服务 -----------------------------
+service Article {
+  rpc Publish(PublishRequest) returns (PublishResponse);
+  rpc Articles(ArticlesRequest) returns (ArticlesResponse);
+  rpc ArticleDelete(ArticleDeleteRequest) returns (ArticleDeleteResponse);
+  rpc ArticleDetail(ArticleDetailRequest) returns (ArticleDetailResponse);
+  rpc SearchArticles(SearchRequest) returns (SearchResponse);
+  rpc AdminPendingList(AdminPendingListRequest) returns (AdminPendingListResponse);
+  rpc AdminAudit(AdminAuditRequest) returns (AdminAuditResponse);
+}
+
+// --------------------------- 问答服务 -----------------------------
+service QA {
+  rpc PublishQuestion(PublishQuestionRequest) returns (PublishQuestionResponse);
+  rpc AnswerQuestion(AnswerQuestionRequest) returns (AnswerQuestionResponse);
+  rpc AcceptAnswer(AcceptAnswerRequest) returns (AcceptAnswerResponse);
+  rpc Questions(QuestionsRequest) returns (QuestionsResponse);
+  rpc QuestionDetail(QuestionDetailRequest) returns (QuestionDetailResponse);
+  rpc QuestionDelete(QuestionDeleteRequest) returns (QuestionDeleteResponse);
+  rpc AnswerList(AnswerListRequest) returns (AnswerListResponse);
+  rpc AnswerDelete(AnswerDeleteRequest) returns (AnswerDeleteResponse);
+  rpc SearchQuestions(SearchQuestionsRequest) returns (SearchQuestionsResponse);
+}
+
+// --------------------------- 标签服务 -----------------------------
+service Tag {
+  rpc CreateTag(CreateTagRequest) returns (CreateTagResponse);
+  rpc UpdateTag(UpdateTagRequest) returns (UpdateTagResponse);
+  rpc DeleteTag(DeleteTagRequest) returns (DeleteTagResponse);
+  rpc TagDetail(TagDetailRequest) returns (TagDetailResponse);
+  rpc TagList(TagListRequest) returns (TagListResponse);
+  rpc HotTags(HotTagsRequest) returns (HotTagsResponse);
+  rpc TagResource(TagResourceRequest) returns (TagResourceResponse);
+  rpc UntagResource(UntagResourceRequest) returns (UntagResourceResponse);
+  rpc ResourcesByTag(ResourcesByTagRequest) returns (ResourcesByTagResponse);
+  rpc TagsByResource(TagsByResourceRequest) returns (TagsByResourceResponse);
+}
+
+// ==================== Article Messages ====================
+
+message PublishRequest {
+  int64 userId = 1;
+  string title = 2;
+  string content = 3;
+  string description = 4;
+  string cover = 5;
+  repeated int64 tagIds = 6;
+}
+
+message PublishData {
+  int64 articleId = 1;
+}
+
+message PublishResponse {
+  int64 code = 1;
+  string msg = 2;
+  PublishData data = 3;
+}
+
+message ArticlesRequest {
+  int64 userId = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+  int32 sortType = 4;
+  int64 articleId = 5;
+}
+
+message ArticleItem {
+  int64 id = 1;
+  string title = 2;
+  string content = 3;
+  string description = 4;
+  string cover = 5;
+  int64 commentCount = 6;
+  int64 likeCount = 7;
+  int64 publishTime = 8;
+  int64 authorId = 9;
+  int64 status = 10;
+}
+
+message ArticlesData {
+  repeated ArticleItem articles = 1;
+  bool isEnd = 2;
+  int64 cursor = 3;
+  int64 articleId = 4;
+}
+
+message ArticlesResponse {
+  int64 code = 1;
+  string msg = 2;
+  ArticlesData data = 3;
+}
+
+message ArticleDeleteRequest {
+  int64 userId = 1;
+  int64 articleId = 2;
+}
+
+message ArticleDeleteResponse {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message ArticleDetailRequest {
+  int64 articleId = 1;
+}
+
+message ArticleDetailResponse {
+  int64 code = 1;
+  string msg = 2;
+  ArticleItem data = 3;
+}
+
+message SearchRequest {
+  string keyword = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+  int32 sortType = 4;
+}
+
+message SearchItem {
+  int64 articleId = 1;
+  string title = 2;
+  string description = 3;
+  string cover = 4;
+  int64 authorId = 5;
+  string authorName = 6;
+  int64 likeNum = 7;
+  int64 commentNum = 8;
+  string publishTime = 9;
+  string authorAvatar = 10;
+}
+
+message SearchData {
+  repeated SearchItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
+
+message SearchResponse {
+  int64 code = 1;
+  string msg = 2;
+  SearchData data = 3;
+}
+
+message AdminPendingListRequest {
+  int64 cursor = 1;
+  int64 pageSize = 2;
+}
+
+message AdminPendingListResponse {
+  int64 code = 1;
+  string msg = 2;
+  SearchData data = 3;
+}
+
+message AdminAuditRequest {
+  int64 articleId = 1;
+  int32 status = 2;
+}
+
+message AdminAuditResponse {
+  int64 code = 1;
+  string msg = 2;
+}
+
+// ==================== QA Messages ====================
+
+message PublishQuestionRequest {
+  int64 userId = 1;
+  string title = 2;
+  string content = 3;
+  string tagIds = 4;
+}
+
+message PublishQuestionData {
+  int64 questionId = 1;
+}
+
+message PublishQuestionResponse {
+  int64 code = 1;
+  string msg = 2;
+  PublishQuestionData data = 3;
+}
+
+message AnswerQuestionRequest {
+  int64 questionId = 1;
+  int64 userId = 2;
+  string content = 3;
+}
+
+message AnswerQuestionData {
+  int64 answerId = 1;
+}
+
+message AnswerQuestionResponse {
+  int64 code = 1;
+  string msg = 2;
+  AnswerQuestionData data = 3;
+}
+
+message AcceptAnswerRequest {
+  int64 questionId = 1;
+  int64 answerId = 2;
+  int64 userId = 3;
+}
+
+message AcceptAnswerResponse {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message QuestionsRequest {
+  int64 userId = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+  int32 sortType = 4;
+}
+
+message QuestionItem {
+  int64 id = 1;
+  string title = 2;
+  string content = 3;
+  int64 authorId = 4;
+  int64 answerNum = 5;
+  int64 viewNum = 6;
+  string tagIds = 7;
+  int64 createTime = 8;
+}
+
+message QuestionsData {
+  repeated QuestionItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+  int64 questionId = 4;
+}
+
+message QuestionsResponse {
+  int64 code = 1;
+  string msg = 2;
+  QuestionsData data = 3;
+}
+
+message QuestionDetailRequest {
+  int64 questionId = 1;
+}
+
+message QuestionDetailResponse {
+  int64 code = 1;
+  string msg = 2;
+  QuestionItem data = 3;
+}
+
+message QuestionDeleteRequest {
+  int64 userId = 1;
+  int64 questionId = 2;
+}
+
+message QuestionDeleteResponse {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message AnswerListRequest {
+  int64 questionId = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+}
+
+message AnswerItem {
+  int64 id = 1;
+  int64 questionId = 2;
+  int64 authorId = 3;
+  string content = 4;
+  bool isAccepted = 5;
+  int64 likeNum = 6;
+  int64 replyNum = 7;
+  int64 createTime = 8;
+}
+
+message AnswerListData {
+  repeated AnswerItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
+
+message AnswerListResponse {
+  int64 code = 1;
+  string msg = 2;
+  AnswerListData data = 3;
+}
+
+message AnswerDeleteRequest {
+  int64 userId = 1;
+  int64 answerId = 2;
+}
+
+message AnswerDeleteResponse {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message SearchQuestionsRequest {
+  string keyword = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+}
+
+message SearchQuestionItem {
+  int64 id = 1;
+  string title = 2;
+  string content = 3;
+  int64 authorId = 4;
+  int64 answerNum = 5;
+  string tagIds = 6;
+  int64 createTime = 7;
+}
+
+message SearchQuestionsData {
+  repeated SearchQuestionItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
+
+message SearchQuestionsResponse {
+  int64 code = 1;
+  string msg = 2;
+  SearchQuestionsData data = 3;
+}
+
+// ==================== Tag Messages ====================
+
+message CreateTagRequest {
+  string tagName = 1;
+  string tagDesc = 2;
+}
+
+message CreateTagData {
+  int64 tagId = 1;
+}
+
+message CreateTagResponse {
+  int64 code = 1;
+  string msg = 2;
+  CreateTagData data = 3;
+}
+
+message UpdateTagRequest {
+  int64 tagId = 1;
+  string tagName = 2;
+  string tagDesc = 3;
+}
+
+message UpdateTagResponse {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message DeleteTagRequest {
+  int64 tagId = 1;
+}
+
+message DeleteTagResponse {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message TagDetailRequest {
+  int64 tagId = 1;
+}
+
+message TagItem {
+  int64 tagId = 1;
+  string tagName = 2;
+  string tagDesc = 3;
+  int64 resourceCount = 4;
+  int64 createTime = 5;
+}
+
+message TagDetailResponse {
+  int64 code = 1;
+  string msg = 2;
+  TagItem data = 3;
+}
+
+message TagListRequest {
+  int64 cursor = 1;
+  int64 pageSize = 2;
+}
+
+message TagListData {
+  repeated TagItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
+
+message TagListResponse {
+  int64 code = 1;
+  string msg = 2;
+  TagListData data = 3;
+}
+
+message HotTagsRequest {
+  int32 limit = 1;
+}
+
+message HotTagsResponse {
+  int64 code = 1;
+  string msg = 2;
+  repeated TagItem data = 3;
+}
+
+message TagResourceRequest {
+  string bizId = 1;
+  int64 targetId = 2;
+  int64 tagId = 3;
+  int64 userId = 4;
+}
+
+message TagResourceResponse {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message UntagResourceRequest {
+  string bizId = 1;
+  int64 targetId = 2;
+  int64 tagId = 3;
+  int64 userId = 4;
+}
+
+message UntagResourceResponse {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message ResourcesByTagRequest {
+  int64 tagId = 1;
+  string bizId = 2;
+  int64 cursor = 3;
+  int64 pageSize = 4;
+}
+
+message ResourceItem {
+  int64 targetId = 1;
+  string bizId = 2;
+  int64 createTime = 3;
+}
+
+message ResourcesByTagData {
+  repeated ResourceItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
+
+message ResourcesByTagResponse {
+  int64 code = 1;
+  string msg = 2;
+  ResourcesByTagData data = 3;
+}
+
+message TagsByResourceRequest {
+  string bizId = 1;
+  int64 targetId = 2;
+}
+
+message TagsByResourceResponse {
+  int64 code = 1;
+  string msg = 2;
+  repeated TagItem data = 3;
+}

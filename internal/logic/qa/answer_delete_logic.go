@@ -1,0 +1,57 @@
+package qalogic
+
+import (
+	"context"
+
+	"rpc-content/content"
+	"rpc-content/internal/svc"
+	"rpc-content/pkg/code"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type AnswerDeleteLogic struct {
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+	logx.Logger
+}
+
+func NewAnswerDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AnswerDeleteLogic {
+	return &AnswerDeleteLogic{
+		ctx:    ctx,
+		svcCtx: svcCtx,
+		Logger: logx.WithContext(ctx),
+	}
+}
+
+func (l *AnswerDeleteLogic) AnswerDelete(in *content.AnswerDeleteRequest) (*content.AnswerDeleteResponse, error) {
+	if in.UserId <= 0 {
+		return nil, code.QAUserIdInvalid
+	}
+	if in.AnswerId == 0 {
+		return nil, code.AnswerNotFound
+	}
+
+	a, err := l.svcCtx.AnswerModel.FindOne(l.ctx, in.AnswerId)
+	if err != nil {
+		l.Errorf("[AnswerDelete] FindOne err: %v id: %d", err, in.AnswerId)
+		return nil, err
+	}
+	if a == nil || a.Status == 1 {
+		return nil, code.AnswerNotFound
+	}
+	if a.AuthorID != in.UserId {
+		return nil, code.NotAnswerAuthor
+	}
+
+	if err := l.svcCtx.AnswerModel.UpdateFields(l.ctx, in.AnswerId, map[string]interface{}{"status": 1}); err != nil {
+		l.Errorf("[AnswerDelete] UpdateFields err: %v id: %d", err, in.AnswerId)
+		return nil, err
+	}
+	_ = l.svcCtx.QuestionModel.DecrAnswerNum(l.ctx, a.QuestionID)
+
+	return &content.AnswerDeleteResponse{
+		Code: 200,
+		Msg:  "success",
+	}, nil
+}

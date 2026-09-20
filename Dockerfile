@@ -1,15 +1,18 @@
 FROM golang:1.26-alpine AS builder
 
-WORKDIR /build
+LABEL stage=gobuilder
 
+ENV CGO_ENABLED=0
+ENV GOOS=linux
 ENV GOPROXY=https://goproxy.cn,direct
+
+WORKDIR /build
 
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/rpc-content .
+RUN go build -ldflags="-s -w" -o /app/content content.go
 
 FROM alpine:3.20
 
@@ -17,10 +20,9 @@ ENV TZ=Asia/Shanghai
 RUN apk add --no-cache tzdata ca-certificates
 
 WORKDIR /app
-COPY --from=builder /app/rpc-content /app/rpc-content
+COPY --from=builder /app/content /app/content
 COPY etc /app/etc
 
-EXPOSE 9090
+EXPOSE 8080
 
-ENTRYPOINT ["/app/rpc-content"]
-CMD ["-f", "etc/content.yaml"]
+CMD ["./content", "-f", "etc/content.yaml"]

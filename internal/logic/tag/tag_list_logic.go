@@ -26,7 +26,13 @@ func NewTagListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TagListLo
 	}
 }
 
-func (l *TagListLogic) TagList(in *content.TagListRequest) (*content.TagListResponse, error) {
+func (l *TagListLogic) TagList(in *content.TagListRequest) (resp *content.TagListResponse, err error) {
+	resp = new(content.TagListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.TagListData)
+	resp.Data.Items = make([]*content.TagItem, 0)
+
 	if in.PageSize == 0 {
 		in.PageSize = types.DefaultPageSize
 	}
@@ -51,14 +57,8 @@ func (l *TagListLogic) TagList(in *content.TagListRequest) (*content.TagListResp
 		isEnd = true
 	}
 	if len(tags) == 0 {
-		return &content.TagListResponse{
-			Code: 200,
-			Msg:  "success",
-			Data: &content.TagListData{
-				Items: []*content.TagItem{},
-				IsEnd: true,
-			},
-		}, nil
+		resp.Data.IsEnd = true
+		return resp, nil
 	}
 
 	tagIds := make([]int64, len(tags))
@@ -81,15 +81,10 @@ func (l *TagListLogic) TagList(in *content.TagListRequest) (*content.TagListResp
 	}
 
 	cursor = tags[len(tags)-1].ID
-	return &content.TagListResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.TagListData{
-			Items:  items,
-			Cursor: cursor,
-			IsEnd:  isEnd,
-		},
-	}, nil
+	resp.Data.Items = items
+	resp.Data.Cursor = cursor
+	resp.Data.IsEnd = isEnd
+	return resp, nil
 }
 
 func buildTagItems(tags []*model.Tag, countMap map[int64]int64) []*content.TagItem {

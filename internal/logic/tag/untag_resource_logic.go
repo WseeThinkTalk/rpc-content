@@ -24,7 +24,11 @@ func NewUntagResourceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Unt
 	}
 }
 
-func (l *UntagResourceLogic) UntagResource(in *content.UntagResourceRequest) (*content.UntagResourceResponse, error) {
+func (l *UntagResourceLogic) UntagResource(in *content.UntagResourceRequest) (resp *content.UntagResourceResponse, err error) {
+	resp = new(content.UntagResourceResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+
 	if in.BizId == "" {
 		return nil, code.BizIdEmpty
 	}
@@ -41,10 +45,7 @@ func (l *UntagResourceLogic) UntagResource(in *content.UntagResourceRequest) (*c
 		return nil, err
 	}
 	if exist == nil {
-		return &content.UntagResourceResponse{
-			Code: 200,
-			Msg:  "success",
-		}, nil
+		return resp, nil
 	}
 
 	err = l.svcCtx.TagResourceModel.Delete(l.ctx, exist.ID)
@@ -53,8 +54,5 @@ func (l *UntagResourceLogic) UntagResource(in *content.UntagResourceRequest) (*c
 		return nil, err
 	}
 
-	return &content.UntagResourceResponse{
-		Code: 200,
-		Msg:  "success",
-	}, nil
+	return resp, nil
 }

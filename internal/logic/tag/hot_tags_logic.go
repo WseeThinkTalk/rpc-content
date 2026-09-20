@@ -24,7 +24,12 @@ func NewHotTagsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *HotTagsLo
 	}
 }
 
-func (l *HotTagsLogic) HotTags(in *content.HotTagsRequest) (*content.HotTagsResponse, error) {
+func (l *HotTagsLogic) HotTags(in *content.HotTagsRequest) (resp *content.HotTagsResponse, err error) {
+	resp = new(content.HotTagsResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = make([]*content.TagItem, 0)
+
 	limit := int(in.Limit)
 	if limit <= 0 || limit > types.HotTagsMaxCount {
 		limit = types.HotTagsMaxCount
@@ -36,11 +41,7 @@ func (l *HotTagsLogic) HotTags(in *content.HotTagsRequest) (*content.HotTagsResp
 		return nil, err
 	}
 	if len(tagIds) == 0 {
-		return &content.HotTagsResponse{
-			Code: 200,
-			Msg:  "success",
-			Data: []*content.TagItem{},
-		}, nil
+		return resp, nil
 	}
 
 	tags, err := l.svcCtx.TagModel.FindByIds(l.ctx, tagIds)
@@ -54,9 +55,6 @@ func (l *HotTagsLogic) HotTags(in *content.HotTagsRequest) (*content.HotTagsResp
 		l.Logger.Errorf("[HotTags] TagResourceModel.CountByTagIDs err: %v", err)
 	}
 
-	return &content.HotTagsResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: buildTagItems(tags, countMap),
-	}, nil
+	resp.Data = buildTagItems(tags, countMap)
+	return resp, nil
 }

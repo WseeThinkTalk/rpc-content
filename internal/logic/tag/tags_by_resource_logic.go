@@ -24,7 +24,12 @@ func NewTagsByResourceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ta
 	}
 }
 
-func (l *TagsByResourceLogic) TagsByResource(in *content.TagsByResourceRequest) (*content.TagsByResourceResponse, error) {
+func (l *TagsByResourceLogic) TagsByResource(in *content.TagsByResourceRequest) (resp *content.TagsByResourceResponse, err error) {
+	resp = new(content.TagsByResourceResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = make([]*content.TagItem, 0)
+
 	if in.BizId == "" {
 		return nil, code.BizIdEmpty
 	}
@@ -38,11 +43,7 @@ func (l *TagsByResourceLogic) TagsByResource(in *content.TagsByResourceRequest) 
 		return nil, err
 	}
 	if len(trs) == 0 {
-		return &content.TagsByResourceResponse{
-			Code: 200,
-			Msg:  "success",
-			Data: []*content.TagItem{},
-		}, nil
+		return resp, nil
 	}
 
 	tagIds := make([]int64, len(trs))
@@ -61,9 +62,6 @@ func (l *TagsByResourceLogic) TagsByResource(in *content.TagsByResourceRequest) 
 		l.Logger.Errorf("[TagsByResource] TagResourceModel.CountByTagIDs err: %v", err)
 	}
 
-	return &content.TagsByResourceResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: buildTagItems(tags, countMap),
-	}, nil
+	resp.Data = buildTagItems(tags, countMap)
+	return resp, nil
 }

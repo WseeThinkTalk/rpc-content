@@ -24,7 +24,11 @@ func NewAcceptAnswerLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Acce
 	}
 }
 
-func (l *AcceptAnswerLogic) AcceptAnswer(in *content.AcceptAnswerRequest) (*content.AcceptAnswerResponse, error) {
+func (l *AcceptAnswerLogic) AcceptAnswer(in *content.AcceptAnswerRequest) (resp *content.AcceptAnswerResponse, err error) {
+	resp = new(content.AcceptAnswerResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+
 	if in.UserId <= 0 {
 		return nil, code.QAUserIdInvalid
 	}
@@ -66,8 +70,5 @@ func (l *AcceptAnswerLogic) AcceptAnswer(in *content.AcceptAnswerRequest) (*cont
 		return nil, err
 	}
 
-	return &content.AcceptAnswerResponse{
-		Code: 200,
-		Msg:  "success",
-	}, nil
+	return resp, nil
 }

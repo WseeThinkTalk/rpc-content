@@ -27,7 +27,13 @@ func NewResourcesByTagLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Re
 	}
 }
 
-func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) (*content.ResourcesByTagResponse, error) {
+func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) (resp *content.ResourcesByTagResponse, err error) {
+	resp = new(content.ResourcesByTagResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.ResourcesByTagData)
+	resp.Data.Items = make([]*content.ResourceItem, 0)
+
 	if in.TagId == 0 {
 		return nil, code.TagIdEmpty
 	}
@@ -40,7 +46,6 @@ func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) 
 
 	var (
 		trs   []*model.TagResource
-		err   error
 		isEnd bool
 	)
 
@@ -60,14 +65,8 @@ func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) 
 		isEnd = true
 	}
 	if len(trs) == 0 {
-		return &content.ResourcesByTagResponse{
-			Code: 200,
-			Msg:  "success",
-			Data: &content.ResourcesByTagData{
-				Items: []*content.ResourceItem{},
-				IsEnd: true,
-			},
-		}, nil
+		resp.Data.IsEnd = true
+		return resp, nil
 	}
 
 	items := make([]*content.ResourceItem, 0, len(trs))
@@ -80,13 +79,8 @@ func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) 
 	}
 
 	cursor := trs[len(trs)-1].ID
-	return &content.ResourcesByTagResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.ResourcesByTagData{
-			Items:  items,
-			Cursor: cursor,
-			IsEnd:  isEnd,
-		},
-	}, nil
+	resp.Data.Items = items
+	resp.Data.Cursor = cursor
+	resp.Data.IsEnd = isEnd
+	return resp, nil
 }

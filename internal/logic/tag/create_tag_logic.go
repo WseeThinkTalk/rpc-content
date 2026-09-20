@@ -26,7 +26,12 @@ func NewCreateTagLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CreateT
 	}
 }
 
-func (l *CreateTagLogic) CreateTag(in *content.CreateTagRequest) (*content.CreateTagResponse, error) {
+func (l *CreateTagLogic) CreateTag(in *content.CreateTagRequest) (resp *content.CreateTagResponse, err error) {
+	resp = new(content.CreateTagResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.CreateTagData)
+
 	if in.TagName == "" {
 		return nil, code.TagNameEmpty
 	}
@@ -54,11 +59,6 @@ func (l *CreateTagLogic) CreateTag(in *content.CreateTagRequest) (*content.Creat
 		return nil, err
 	}
 
-	return &content.CreateTagResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.CreateTagData{
-			TagId: tag.ID,
-		},
-	}, nil
+	resp.Data.TagId = tag.ID
+	return resp, nil
 }

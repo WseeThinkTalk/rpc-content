@@ -25,7 +25,13 @@ func NewAnswerListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Answer
 	}
 }
 
-func (l *AnswerListLogic) AnswerList(in *content.AnswerListRequest) (*content.AnswerListResponse, error) {
+func (l *AnswerListLogic) AnswerList(in *content.AnswerListRequest) (resp *content.AnswerListResponse, err error) {
+	resp = new(content.AnswerListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.AnswerListData)
+	resp.Data.Items = make([]*content.AnswerItem, 0)
+
 	if in.QuestionId == 0 {
 		return nil, code.QuestionIdEmpty
 	}
@@ -46,14 +52,8 @@ func (l *AnswerListLogic) AnswerList(in *content.AnswerListRequest) (*content.An
 		isEnd = true
 	}
 	if len(answers) == 0 {
-		return &content.AnswerListResponse{
-			Code: 200,
-			Msg:  "success",
-			Data: &content.AnswerListData{
-				Items: []*content.AnswerItem{},
-				IsEnd: true,
-			},
-		}, nil
+		resp.Data.IsEnd = true
+		return resp, nil
 	}
 
 	items := make([]*content.AnswerItem, 0, len(answers))
@@ -71,13 +71,8 @@ func (l *AnswerListLogic) AnswerList(in *content.AnswerListRequest) (*content.An
 	}
 
 	cursor := answers[len(answers)-1].ID
-	return &content.AnswerListResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.AnswerListData{
-			Items:  items,
-			Cursor: cursor,
-			IsEnd:  isEnd,
-		},
-	}, nil
+	resp.Data.Items = items
+	resp.Data.Cursor = cursor
+	resp.Data.IsEnd = isEnd
+	return resp, nil
 }

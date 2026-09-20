@@ -25,7 +25,13 @@ func NewAdminPendingListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListRequest) (*content.AdminPendingListResponse, error) {
+func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListRequest) (resp *content.AdminPendingListResponse, err error) {
+	resp = new(content.AdminPendingListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.SearchData)
+	resp.Data.Items = make([]*content.SearchItem, 0)
+
 	if in.PageSize == 0 {
 		in.PageSize = 20
 	}
@@ -71,15 +77,10 @@ func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListReq
 		}
 	}
 
-	return &content.AdminPendingListResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.SearchData{
-			Items:  items,
-			Cursor: cursor,
-			IsEnd:  isEnd,
-		},
-	}, nil
+	resp.Data.Items = items
+	resp.Data.Cursor = cursor
+	resp.Data.IsEnd = isEnd
+	return resp, nil
 }
 
 func (l *AdminPendingListLogic) populateAuthorNames(items []*content.SearchItem) {

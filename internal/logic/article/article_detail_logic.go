@@ -25,31 +25,31 @@ func NewArticleDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Art
 	}
 }
 
-func (l *ArticleDetailLogic) ArticleDetail(in *content.ArticleDetailRequest) (*content.ArticleDetailResponse, error) {
+func (l *ArticleDetailLogic) ArticleDetail(in *content.ArticleDetailRequest) (resp *content.ArticleDetailResponse, err error) {
+	resp = new(content.ArticleDetailResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.ArticleItem)
+
 	article, err := l.svcCtx.ArticleModel.FindOne(l.ctx, in.ArticleId)
 	if err != nil {
 		if errors.Is(err, sqlx.ErrNotFound) {
-			return &content.ArticleDetailResponse{
-				Code: 200,
-				Msg:  "success",
-			}, nil
+			resp.Data = nil
+			return resp, nil
 		}
 		return nil, err
 	}
-	return &content.ArticleDetailResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.ArticleItem{
-			Id:           article.Id,
-			Title:        article.Title,
-			Content:      article.Content,
-			Description:  article.Description,
-			Cover:        article.Cover,
-			AuthorId:     article.AuthorId,
-			LikeCount:    article.LikeNum,
-			CommentCount: article.CommentNum,
-			PublishTime:  article.PublishTime.Unix(),
-			Status:       int64(article.Status),
-		},
-	}, nil
+
+	resp.Data.Id = article.Id
+	resp.Data.Title = article.Title
+	resp.Data.Content = article.Content
+	resp.Data.Description = article.Description
+	resp.Data.Cover = article.Cover
+	resp.Data.AuthorId = article.AuthorId
+	resp.Data.LikeCount = article.LikeNum
+	resp.Data.CommentCount = article.CommentNum
+	resp.Data.PublishTime = article.PublishTime.Unix()
+	resp.Data.Status = int64(article.Status)
+
+	return resp, nil
 }

@@ -26,7 +26,11 @@ func NewArticleDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Art
 	}
 }
 
-func (l *ArticleDeleteLogic) ArticleDelete(in *content.ArticleDeleteRequest) (*content.ArticleDeleteResponse, error) {
+func (l *ArticleDeleteLogic) ArticleDelete(in *content.ArticleDeleteRequest) (resp *content.ArticleDeleteResponse, err error) {
+	resp = new(content.ArticleDeleteResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+
 	if in.UserId <= 0 {
 		return nil, code.UserIdInvalid
 	}
@@ -59,8 +63,5 @@ func (l *ArticleDeleteLogic) ArticleDelete(in *content.ArticleDeleteRequest) (*c
 		l.Logger.Errorf("ZremCtx global req: %v error: %v", in, err)
 	}
 
-	return &content.ArticleDeleteResponse{
-		Code: 200,
-		Msg:  "success",
-	}, nil
+	return resp, nil
 }

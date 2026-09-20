@@ -24,7 +24,11 @@ func NewAnswerDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Answ
 	}
 }
 
-func (l *AnswerDeleteLogic) AnswerDelete(in *content.AnswerDeleteRequest) (*content.AnswerDeleteResponse, error) {
+func (l *AnswerDeleteLogic) AnswerDelete(in *content.AnswerDeleteRequest) (resp *content.AnswerDeleteResponse, err error) {
+	resp = new(content.AnswerDeleteResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+
 	if in.UserId <= 0 {
 		return nil, code.QAUserIdInvalid
 	}
@@ -50,8 +54,5 @@ func (l *AnswerDeleteLogic) AnswerDelete(in *content.AnswerDeleteRequest) (*cont
 	}
 	_ = l.svcCtx.QuestionModel.DecrAnswerNum(l.ctx, a.QuestionID)
 
-	return &content.AnswerDeleteResponse{
-		Code: 200,
-		Msg:  "success",
-	}, nil
+	return resp, nil
 }

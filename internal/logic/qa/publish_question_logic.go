@@ -29,7 +29,12 @@ func NewPublishQuestionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *P
 	}
 }
 
-func (l *PublishQuestionLogic) PublishQuestion(in *content.PublishQuestionRequest) (*content.PublishQuestionResponse, error) {
+func (l *PublishQuestionLogic) PublishQuestion(in *content.PublishQuestionRequest) (resp *content.PublishQuestionResponse, err error) {
+	resp = new(content.PublishQuestionResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.PublishQuestionData)
+
 	if in.UserId <= 0 {
 		return nil, code.QAUserIdInvalid
 	}
@@ -61,13 +66,8 @@ func (l *PublishQuestionLogic) PublishQuestion(in *content.PublishQuestionReques
 		_ = l.svcCtx.BizRedis.ExpireCtx(l.ctx, key, types.CacheExpireTime)
 	}
 
-	return &content.PublishQuestionResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.PublishQuestionData{
-			QuestionId: q.ID,
-		},
-	}, nil
+	resp.Data.QuestionId = q.ID
+	return resp, nil
 }
 
 func questionsKey(uid int64, sortType int32) string {

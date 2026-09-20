@@ -35,7 +35,12 @@ const (
 	maxDescriptionLength = 500
 )
 
-func (l *PublishLogic) Publish(in *content.PublishRequest) (*content.PublishResponse, error) {
+func (l *PublishLogic) Publish(in *content.PublishRequest) (resp *content.PublishResponse, err error) {
+	resp = new(content.PublishResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.PublishData)
+
 	if in.UserId <= 0 {
 		return nil, code.UserIdInvalid
 	}
@@ -111,11 +116,6 @@ func (l *PublishLogic) Publish(in *content.PublishRequest) (*content.PublishResp
 		}
 	}
 
-	return &content.PublishResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.PublishData{
-			ArticleId: articleId,
-		},
-	}, nil
+	resp.Data.ArticleId = articleId
+	return resp, nil
 }

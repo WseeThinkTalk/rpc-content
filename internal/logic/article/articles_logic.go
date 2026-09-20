@@ -31,7 +31,13 @@ func NewArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Articles
 	}
 }
 
-func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (*content.ArticlesResponse, error) {
+func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.ArticlesResponse, err error) {
+	resp = new(content.ArticlesResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.ArticlesData)
+	resp.Data.Articles = make([]*content.ArticleItem, 0)
+
 	if in.SortType != types.SortPublishTime && in.SortType != types.SortLikeCount {
 		return nil, code.SortTypeInvalid
 	}
@@ -51,7 +57,6 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (*content.Articles
 	}
 
 	var (
-		err            error
 		isCache, isEnd bool
 		lastId, cursor int64
 		articleIds     []int64
@@ -111,14 +116,8 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (*content.Articles
 		}
 
 		if len(articleModels) == 0 {
-			return &content.ArticlesResponse{
-				Code: 200,
-				Msg:  "success",
-				Data: &content.ArticlesData{
-					Articles: []*content.ArticleItem{},
-					IsEnd:    true,
-				},
-			}, nil
+			resp.Data.IsEnd = true
+			return resp, nil
 		}
 
 		var filtered []*model.Article
@@ -200,16 +199,10 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (*content.Articles
 		}
 	}
 
-	ret := &content.ArticlesResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.ArticlesData{
-			Articles:  items,
-			IsEnd:     isEnd,
-			Cursor:    cursor,
-			ArticleId: lastId,
-		},
-	}
+	resp.Data.Articles = items
+	resp.Data.IsEnd = isEnd
+	resp.Data.Cursor = cursor
+	resp.Data.ArticleId = lastId
 
 	if !isCache {
 		threading.GoSafe(func() {
@@ -217,7 +210,7 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (*content.Articles
 		})
 	}
 
-	return ret, nil
+	return resp, nil
 }
 
 func (l *ArticlesLogic) addCacheArticles(ctx context.Context, userId int64, articles []*model.Article) error {

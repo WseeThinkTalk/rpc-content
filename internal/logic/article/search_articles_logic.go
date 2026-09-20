@@ -30,7 +30,13 @@ func NewSearchArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 	}
 }
 
-func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (*content.SearchResponse, error) {
+func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *content.SearchResponse, err error) {
+	resp = new(content.SearchResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.SearchData)
+	resp.Data.Items = make([]*content.SearchItem, 0)
+
 	if in.PageSize == 0 {
 		in.PageSize = 20
 	}
@@ -88,14 +94,8 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (*conten
 		}
 
 		if len(allModels) == 0 {
-			return &content.SearchResponse{
-				Code: 200,
-				Msg:  "success",
-				Data: &content.SearchData{
-					Items: []*content.SearchItem{},
-					IsEnd: true,
-				},
-			}, nil
+			resp.Data.IsEnd = true
+			return resp, nil
 		}
 
 		if in.Cursor == 0 {
@@ -145,15 +145,10 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (*conten
 		populateAuthorNames(l.ctx, l.svcCtx, items, l.Logger)
 	}
 
-	return &content.SearchResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.SearchData{
-			Items:  items,
-			Cursor: cursor,
-			IsEnd:  isEnd,
-		},
-	}, nil
+	resp.Data.Items = items
+	resp.Data.Cursor = cursor
+	resp.Data.IsEnd = isEnd
+	return resp, nil
 }
 
 func getCachedArticleIds(ctx context.Context, svcCtx *svc.ServiceContext, key string) []int64 {

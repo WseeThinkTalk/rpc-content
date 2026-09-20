@@ -26,7 +26,12 @@ func NewAnswerQuestionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *An
 	}
 }
 
-func (l *AnswerQuestionLogic) AnswerQuestion(in *content.AnswerQuestionRequest) (*content.AnswerQuestionResponse, error) {
+func (l *AnswerQuestionLogic) AnswerQuestion(in *content.AnswerQuestionRequest) (resp *content.AnswerQuestionResponse, err error) {
+	resp = new(content.AnswerQuestionResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.AnswerQuestionData)
+
 	if in.UserId <= 0 {
 		return nil, code.QAUserIdInvalid
 	}
@@ -61,11 +66,6 @@ func (l *AnswerQuestionLogic) AnswerQuestion(in *content.AnswerQuestionRequest) 
 
 	_ = l.svcCtx.QuestionModel.IncrAnswerNum(l.ctx, in.QuestionId)
 
-	return &content.AnswerQuestionResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.AnswerQuestionData{
-			AnswerId: ans.ID,
-		},
-	}, nil
+	resp.Data.AnswerId = ans.ID
+	return resp, nil
 }

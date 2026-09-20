@@ -25,7 +25,13 @@ func NewQuestionsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Questio
 	}
 }
 
-func (l *QuestionsLogic) Questions(in *content.QuestionsRequest) (*content.QuestionsResponse, error) {
+func (l *QuestionsLogic) Questions(in *content.QuestionsRequest) (resp *content.QuestionsResponse, err error) {
+	resp = new(content.QuestionsResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.QuestionsData)
+	resp.Data.Items = make([]*content.QuestionItem, 0)
+
 	if in.PageSize == 0 {
 		in.PageSize = types.DefaultPageSize
 	}
@@ -49,14 +55,8 @@ func (l *QuestionsLogic) Questions(in *content.QuestionsRequest) (*content.Quest
 		isEnd = true
 	}
 	if len(questions) == 0 {
-		return &content.QuestionsResponse{
-			Code: 200,
-			Msg:  "success",
-			Data: &content.QuestionsData{
-				Items: []*content.QuestionItem{},
-				IsEnd: true,
-			},
-		}, nil
+		resp.Data.IsEnd = true
+		return resp, nil
 	}
 
 	items := make([]*content.QuestionItem, 0, len(questions))
@@ -81,13 +81,8 @@ func (l *QuestionsLogic) Questions(in *content.QuestionsRequest) (*content.Quest
 		cursor = last.ID
 	}
 
-	return &content.QuestionsResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.QuestionsData{
-			Items:  items,
-			Cursor: cursor,
-			IsEnd:  isEnd,
-		},
-	}, nil
+	resp.Data.Items = items
+	resp.Data.Cursor = cursor
+	resp.Data.IsEnd = isEnd
+	return resp, nil
 }

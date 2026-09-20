@@ -26,20 +26,20 @@ func NewSearchQuestionsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *S
 	}
 }
 
-func (l *SearchQuestionsLogic) SearchQuestions(in *content.SearchQuestionsRequest) (*content.SearchQuestionsResponse, error) {
+func (l *SearchQuestionsLogic) SearchQuestions(in *content.SearchQuestionsRequest) (resp *content.SearchQuestionsResponse, err error) {
+	resp = new(content.SearchQuestionsResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.SearchQuestionsData)
+	resp.Data.Items = make([]*content.SearchQuestionItem, 0)
+
 	if in.PageSize == 0 {
 		in.PageSize = 20
 	}
 
 	if l.svcCtx.Es == nil {
-		return &content.SearchQuestionsResponse{
-			Code: 200,
-			Msg:  "success",
-			Data: &content.SearchQuestionsData{
-				Items: []*content.SearchQuestionItem{},
-				IsEnd: true,
-			},
-		}, nil
+		resp.Data.IsEnd = true
+		return resp, nil
 	}
 
 	query := buildQuestionSearchQuery(in.Keyword, in.PageSize+1, in.Cursor)
@@ -88,15 +88,10 @@ func (l *SearchQuestionsLogic) SearchQuestions(in *content.SearchQuestionsReques
 		cursor = hits[len(hits)-1].Sort[0]
 	}
 
-	return &content.SearchQuestionsResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.SearchQuestionsData{
-			Items:  items,
-			Cursor: cursor,
-			IsEnd:  isEnd,
-		},
-	}, nil
+	resp.Data.Items = items
+	resp.Data.Cursor = cursor
+	resp.Data.IsEnd = isEnd
+	return resp, nil
 }
 
 func buildQuestionSearchQuery(keyword string, size, cursor int64) string {

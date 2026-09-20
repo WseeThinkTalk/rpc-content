@@ -24,7 +24,12 @@ func NewTagDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TagDeta
 	}
 }
 
-func (l *TagDetailLogic) TagDetail(in *content.TagDetailRequest) (*content.TagDetailResponse, error) {
+func (l *TagDetailLogic) TagDetail(in *content.TagDetailRequest) (resp *content.TagDetailResponse, err error) {
+	resp = new(content.TagDetailResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(content.TagItem)
+
 	if in.TagId == 0 {
 		return nil, code.TagIdEmpty
 	}
@@ -44,15 +49,11 @@ func (l *TagDetailLogic) TagDetail(in *content.TagDetailRequest) (*content.TagDe
 		return nil, err
 	}
 
-	return &content.TagDetailResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &content.TagItem{
-			TagId:         tag.ID,
-			TagName:       tag.TagName,
-			TagDesc:       tag.TagDesc,
-			ResourceCount: resourceCount,
-			CreateTime:    tag.CreateTime.Unix(),
-		},
-	}, nil
+	resp.Data.TagId = tag.ID
+	resp.Data.TagName = tag.TagName
+	resp.Data.TagDesc = tag.TagDesc
+	resp.Data.ResourceCount = resourceCount
+	resp.Data.CreateTime = tag.CreateTime.Unix()
+
+	return resp, nil
 }

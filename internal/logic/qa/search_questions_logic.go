@@ -70,9 +70,10 @@ func (l *SearchQuestionsLogic) SearchQuestions(in *content.SearchQuestionsReques
 		isEnd = true
 	}
 
+	// 转换搜索结果命中项为响应数据
 	items := make([]*content.SearchQuestionItem, 0, len(hits))
-	for _, hit := range hits {
-		src := hit.Source
+	for _, v := range hits {
+		src := v.Source
 		items = append(items, &content.SearchQuestionItem{
 			Id:         src.ID,
 			Title:      src.Title,

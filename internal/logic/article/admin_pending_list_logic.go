@@ -50,17 +50,18 @@ func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListReq
 		isEnd = true
 	}
 
+	// 转换待审核文章实体为响应数据项
 	items := make([]*content.SearchItem, 0, len(articles))
-	for _, art := range articles {
+	for _, v := range articles {
 		items = append(items, &content.SearchItem{
-			ArticleId:   art.Id,
-			Title:       art.Title,
-			Description: art.Description,
-			Cover:       art.Cover,
-			AuthorId:    art.AuthorId,
-			LikeNum:     art.LikeNum,
-			CommentNum:  art.CommentNum,
-			PublishTime: art.PublishTime.Format("2006-01-02 15:04:05"),
+			ArticleId:   v.Id,
+			Title:       v.Title,
+			Description: v.Description,
+			Cover:       v.Cover,
+			AuthorId:    v.AuthorId,
+			LikeNum:     v.LikeNum,
+			CommentNum:  v.CommentNum,
+			PublishTime: v.PublishTime.Format("2006-01-02 15:04:05"),
 		})
 	}
 
@@ -84,11 +85,12 @@ func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListReq
 }
 
 func (l *AdminPendingListLogic) populateAuthorNames(items []*content.SearchItem) {
-	for _, item := range items {
-		u, err := l.svcCtx.UserRPC.FindById(l.ctx, &user.FindByIdRequest{UserId: item.AuthorId})
+	// 批量查询并填充文章作者名称
+	for _, v := range items {
+		u, err := l.svcCtx.UserRPC.FindById(l.ctx, &user.FindByIdRequest{UserId: v.AuthorId})
 		if err != nil {
 			continue
 		}
-		item.AuthorName = u.Username
+		v.AuthorName = u.Username
 	}
 }

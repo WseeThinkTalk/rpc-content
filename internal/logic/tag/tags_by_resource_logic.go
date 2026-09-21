@@ -49,9 +49,10 @@ func (l *TagsByResourceLogic) TagsByResource(in *content.TagsByResourceRequest) 
 		return resp, nil
 	}
 
+	// 提取标签ID列表
 	tagIds := make([]int64, len(trs))
-	for i, tr := range trs {
-		tagIds[i] = tr.TagID
+	for i, v := range trs {
+		tagIds[i] = v.TagID
 	}
 
 	tags, err := l.svcCtx.TagModel.FindByIds(l.ctx, tagIds)

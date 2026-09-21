@@ -79,13 +79,14 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 			return resp, nil
 		}
 
+		// 解析 Redis ZSet 成员及对应分值
 		var scores []int64
-		for _, pair := range pairs {
-			artId, err := strconv.ParseInt(pair.Key, 10, 64)
+		for _, v := range pairs {
+			artId, err := strconv.ParseInt(v.Key, 10, 64)
 			if err != nil {
 				continue
 			}
-			score := pair.Score
+			score := v.Score
 			articleIds = append(articleIds, artId)
 			scores = append(scores, score)
 		}
@@ -101,8 +102,9 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 		curPageIds = articleIds
 
 		if in.Cursor > 0 && in.ArticleId > 0 && len(curPageIds) > 0 {
-			for i, artId := range curPageIds {
-				if scores[i] == in.Cursor && artId == in.ArticleId {
+			// 定位游标在当前缓存ID列表中的偏移量
+			for i, v := range curPageIds {
+				if scores[i] == in.Cursor && v == in.ArticleId {
 					curPageIds = curPageIds[i+1:]
 					break
 				}
@@ -121,28 +123,30 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 			return resp, nil
 		}
 
+		// 根据游标过滤早于指定分值的文章
 		var filtered []*model.Article
-		for _, art := range articleModels {
+		for _, v := range articleModels {
 			var score int64
 			if in.SortType == types.SortLikeCount {
-				score = art.LikeNum
+				score = v.LikeNum
 			} else {
-				score = art.PublishTime.Unix()
+				score = v.PublishTime.Unix()
 			}
 			if score <= in.Cursor {
-				filtered = append(filtered, art)
+				filtered = append(filtered, v)
 			}
 		}
 
 		if in.Cursor > 0 && in.ArticleId > 0 && len(filtered) > 0 {
-			for i, art := range filtered {
+			// 定位数据库结果中游标文章的具体位置
+			for i, v := range filtered {
 				var score int64
 				if in.SortType == types.SortLikeCount {
-					score = art.LikeNum
+					score = v.LikeNum
 				} else {
-					score = art.PublishTime.Unix()
+					score = v.PublishTime.Unix()
 				}
-				if score == in.Cursor && art.Id == in.ArticleId {
+				if score == in.Cursor && v.Id == in.ArticleId {
 					filtered = filtered[i+1:]
 					break
 				}
@@ -158,14 +162,16 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 			isEnd = true
 		}
 
-		for _, art := range firstPage {
-			curPageIds = append(curPageIds, art.Id)
+		// 收集分页内的文章ID
+		for _, v := range firstPage {
+			curPageIds = append(curPageIds, v.Id)
 		}
 	}
 
+	// 批量查询文章详情并构建响应列表
 	items := make([]*content.ArticleItem, 0, len(curPageIds))
-	for _, artId := range curPageIds {
-		art, err := l.svcCtx.ArticleModel.FindOne(l.ctx, artId)
+	for _, v := range curPageIds {
+		art, err := l.svcCtx.ArticleModel.FindOne(l.ctx, v)
 		if err != nil {
 			if errors.Is(err, model.ErrNotFound) {
 				continue
@@ -223,10 +229,11 @@ func (l *ArticlesLogic) addCacheArticles(ctx context.Context, userId int64, arti
 		_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, publishTimeKey, 0, "-1")
 		_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, likeNumKey, 0, "-1")
 	} else {
-		for _, article := range articles {
-			artIdStr := strconv.FormatInt(article.Id, 10)
-			_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, publishTimeKey, article.PublishTime.Unix(), artIdStr)
-			_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, likeNumKey, article.LikeNum, artIdStr)
+		// 批量将文章写入 Redis 排序集合
+		for _, v := range articles {
+			artIdStr := strconv.FormatInt(v.Id, 10)
+			_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, publishTimeKey, v.PublishTime.Unix(), artIdStr)
+			_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, likeNumKey, v.LikeNum, artIdStr)
 		}
 		_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, publishTimeKey, 0, "-1")
 		_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, likeNumKey, 0, "-1")

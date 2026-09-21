@@ -57,17 +57,18 @@ func (l *AnswerListLogic) AnswerList(in *content.AnswerListRequest) (resp *conte
 		return resp, nil
 	}
 
+	// 转换回答模型为响应 DTO
 	items := make([]*content.AnswerItem, 0, len(answers))
-	for _, a := range answers {
+	for _, v := range answers {
 		items = append(items, &content.AnswerItem{
-			Id:         a.ID,
-			QuestionId: a.QuestionID,
-			AuthorId:   a.AuthorID,
-			Content:    a.Content,
-			IsAccepted: a.IsAccepted == 1,
-			LikeNum:    int64(a.LikeNum),
-			ReplyNum:   int64(a.ReplyNum),
-			CreateTime: a.CreateTime.Unix(),
+			Id:         v.ID,
+			QuestionId: v.QuestionID,
+			AuthorId:   v.AuthorID,
+			Content:    v.Content,
+			IsAccepted: v.IsAccepted == 1,
+			LikeNum:    int64(v.LikeNum),
+			ReplyNum:   int64(v.ReplyNum),
+			CreateTime: v.CreateTime.Unix(),
 		})
 	}
 

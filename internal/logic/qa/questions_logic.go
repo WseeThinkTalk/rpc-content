@@ -59,17 +59,18 @@ func (l *QuestionsLogic) Questions(in *content.QuestionsRequest) (resp *content.
 		return resp, nil
 	}
 
+	// 转换问答列表实体为响应 DTO
 	items := make([]*content.QuestionItem, 0, len(questions))
-	for _, q := range questions {
+	for _, v := range questions {
 		items = append(items, &content.QuestionItem{
-			Id:         q.ID,
-			Title:      q.Title,
-			Content:    q.Content,
-			AuthorId:   q.AuthorID,
-			AnswerNum:  int64(q.AnswerNum),
-			ViewNum:    int64(q.ViewNum),
-			TagIds:     q.TagIds,
-			CreateTime: q.CreateTime.Unix(),
+			Id:         v.ID,
+			Title:      v.Title,
+			Content:    v.Content,
+			AuthorId:   v.AuthorID,
+			AnswerNum:  int64(v.AnswerNum),
+			ViewNum:    int64(v.ViewNum),
+			TagIds:     v.TagIds,
+			CreateTime: v.CreateTime.Unix(),
 		})
 	}
 

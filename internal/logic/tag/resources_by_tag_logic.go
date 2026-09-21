@@ -70,12 +70,13 @@ func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) 
 		return resp, nil
 	}
 
+	// 转换标签关联资源为响应数据项
 	items := make([]*content.ResourceItem, 0, len(trs))
-	for _, tr := range trs {
+	for _, v := range trs {
 		items = append(items, &content.ResourceItem{
-			TargetId:   tr.TargetID,
-			BizId:      tr.BizID,
-			CreateTime: tr.CreateTime.Unix(),
+			TargetId:   v.TargetID,
+			BizId:      v.BizID,
+			CreateTime: v.CreateTime.Unix(),
 		})
 	}
 

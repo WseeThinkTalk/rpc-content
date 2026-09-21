@@ -61,19 +61,21 @@ func (l *TagListLogic) TagList(in *content.TagListRequest) (resp *content.TagLis
 		return resp, nil
 	}
 
+	// 提取标签ID列表
 	tagIds := make([]int64, len(tags))
-	for i, t := range tags {
-		tagIds[i] = t.ID
+	for i, v := range tags {
+		tagIds[i] = v.ID
 	}
 	countMap, _ := l.svcCtx.TagResourceModel.CountByTagIDs(l.ctx, tagIds)
 
-	for _, t := range tags {
+	// 组装标签列表数据项
+	for _, v := range tags {
 		items = append(items, &content.TagItem{
-			TagId:         t.ID,
-			TagName:       t.TagName,
-			TagDesc:       t.TagDesc,
-			ResourceCount: countMap[t.ID],
-			CreateTime:    t.CreateTime.Unix(),
+			TagId:         v.ID,
+			TagName:       v.TagName,
+			TagDesc:       v.TagDesc,
+			ResourceCount: countMap[v.ID],
+			CreateTime:    v.CreateTime.Unix(),
 		})
 	}
 
@@ -85,14 +87,15 @@ func (l *TagListLogic) TagList(in *content.TagListRequest) (resp *content.TagLis
 }
 
 func buildTagItems(tags []*model.Tag, countMap map[int64]int64) []*content.TagItem {
+	// 构建标签响应数据列表
 	items := make([]*content.TagItem, 0, len(tags))
-	for _, t := range tags {
+	for _, v := range tags {
 		items = append(items, &content.TagItem{
-			TagId:         t.ID,
-			TagName:       t.TagName,
-			TagDesc:       t.TagDesc,
-			ResourceCount: countMap[t.ID],
-			CreateTime:    t.CreateTime.Unix(),
+			TagId:         v.ID,
+			TagName:       v.TagName,
+			TagDesc:       v.TagDesc,
+			ResourceCount: countMap[v.ID],
+			CreateTime:    v.CreateTime.Unix(),
 		})
 	}
 	return items

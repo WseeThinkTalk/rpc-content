@@ -114,8 +114,9 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 				PageSize: 100,
 			})
 			if err == nil && userResp != nil {
-				for _, item := range userResp.Items {
-					authorIds = append(authorIds, item.UserId)
+				// 收集匹配关键词的用户ID
+				for _, v := range userResp.Items {
+					authorIds = append(authorIds, v.UserId)
 				}
 			}
 		}
@@ -167,9 +168,10 @@ func getCachedArticleIds(ctx context.Context, svcCtx *svc.ServiceContext, key st
 		return nil
 	}
 
+	// 解析缓存中的文章ID
 	ids := make([]int64, 0, len(pairs))
-	for _, pair := range pairs {
-		id, err := strconv.ParseInt(pair.Key, 10, 64)
+	for _, v := range pairs {
+		id, err := strconv.ParseInt(v.Key, 10, 64)
 		if err != nil || id == -1 {
 			continue
 		}
@@ -179,17 +181,18 @@ func getCachedArticleIds(ctx context.Context, svcCtx *svc.ServiceContext, key st
 }
 
 func articlesToItems(models []*model.Article) []*content.SearchItem {
+	// 转换文章实体为搜索数据项
 	items := make([]*content.SearchItem, 0, len(models))
-	for _, art := range models {
+	for _, v := range models {
 		items = append(items, &content.SearchItem{
-			ArticleId:   art.Id,
-			Title:       art.Title,
-			Description: art.Description,
-			Cover:       art.Cover,
-			AuthorId:    art.AuthorId,
-			LikeNum:     art.LikeNum,
-			CommentNum:  art.CommentNum,
-			PublishTime: art.PublishTime.Format("2006-01-02 15:04:05"),
+			ArticleId:   v.Id,
+			Title:       v.Title,
+			Description: v.Description,
+			Cover:       v.Cover,
+			AuthorId:    v.AuthorId,
+			LikeNum:     v.LikeNum,
+			CommentNum:  v.CommentNum,
+			PublishTime: v.PublishTime.Format("2006-01-02 15:04:05"),
 		})
 	}
 	return items
@@ -198,9 +201,10 @@ func articlesToItems(models []*model.Article) []*content.SearchItem {
 func paginateByTime(allArticles []*model.Article, cursor int64, pageSize int) ([]*model.Article, bool, int64) {
 	cursorTime := time.Unix(cursor, 0)
 
+	// 定位首个早于游标时间的文章索引
 	startIdx := len(allArticles)
-	for i, art := range allArticles {
-		if art.PublishTime.Before(cursorTime) {
+	for i, v := range allArticles {
+		if v.PublishTime.Before(cursorTime) {
 			startIdx = i
 			break
 		}
@@ -232,9 +236,10 @@ func populateAuthorNames(ctx context.Context, svcCtx *svc.ServiceContext, items 
 		return
 	}
 
+	// 提取去重后的作者ID集合
 	authorIds := make(map[int64]struct{}, len(items))
-	for _, item := range items {
-		authorIds[item.AuthorId] = struct{}{}
+	for _, v := range items {
+		authorIds[v.AuthorId] = struct{}{}
 	}
 
 	type result struct {
@@ -245,7 +250,8 @@ func populateAuthorNames(ctx context.Context, svcCtx *svc.ServiceContext, items 
 	results := make(chan result, len(authorIds))
 	var wg sync.WaitGroup
 
-	for uid := range authorIds {
+	// 并发批量拉取作者信息
+	for v := range authorIds {
 		wg.Add(1)
 		go func(userId int64) {
 			defer wg.Done()
@@ -254,7 +260,7 @@ func populateAuthorNames(ctx context.Context, svcCtx *svc.ServiceContext, items 
 				return
 			}
 			results <- result{authorId: userId, name: u.Username, avatar: u.Avatar}
-		}(uid)
+		}(v)
 	}
 
 	go func() {
@@ -266,15 +272,17 @@ func populateAuthorNames(ctx context.Context, svcCtx *svc.ServiceContext, items 
 		name   string
 		avatar string
 	}
+	// 汇总各协程返回的作者信息
 	infoMap := make(map[int64]authorInfo, len(authorIds))
-	for r := range results {
-		infoMap[r.authorId] = authorInfo{name: r.name, avatar: r.avatar}
+	for v := range results {
+		infoMap[v.authorId] = authorInfo{name: v.name, avatar: v.avatar}
 	}
 
-	for _, item := range items {
-		if info, ok := infoMap[item.AuthorId]; ok {
-			item.AuthorName = info.name
-			item.AuthorAvatar = info.avatar
+	// 为搜索结果补充作者用户名与头像
+	for _, v := range items {
+		if info, ok := infoMap[v.AuthorId]; ok {
+			v.AuthorName = info.name
+			v.AuthorAvatar = info.avatar
 		}
 	}
 }
@@ -284,9 +292,10 @@ func (l *SearchArticlesLogic) addCacheAllArticles(ctx context.Context, articles 
 	if len(articles) == 0 {
 		_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, key, 0, "-1")
 	} else {
-		for _, article := range articles {
-			artIdStr := strconv.FormatInt(article.Id, 10)
-			_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, key, article.PublishTime.Unix(), artIdStr)
+		// 批量缓存文章ID及发布时间
+		for _, v := range articles {
+			artIdStr := strconv.FormatInt(v.Id, 10)
+			_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, key, v.PublishTime.Unix(), artIdStr)
 		}
 		_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, key, 0, "-1")
 	}

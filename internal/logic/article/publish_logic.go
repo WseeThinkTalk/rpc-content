@@ -108,13 +108,13 @@ func (l *PublishLogic) Publish(in *content.PublishRequest) (resp *content.Publis
 		_, _ = l.svcCtx.BizRedis.ZaddCtx(l.ctx, likeNumKey, 0, articleIdStr)
 	}
 
-	// 关联标签
+	// 关联文章标签
 	if len(in.TagIds) > 0 {
-		for _, tagId := range in.TagIds {
+		for _, v := range in.TagIds {
 			_ = l.svcCtx.TagResourceModel.Insert(l.ctx, &tagmodel.TagResource{
 				BizID:      "article",
 				TargetID:   articleId,
-				TagID:      tagId,
+				TagID:      v,
 				UserID:     in.UserId,
 				CreateTime: time.Now(),
 				UpdateTime: time.Now(),

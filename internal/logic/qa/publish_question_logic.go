@@ -31,8 +31,6 @@ func NewPublishQuestionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *P
 
 func (l *PublishQuestionLogic) PublishQuestion(in *content.PublishQuestionRequest) (resp *content.PublishQuestionResponse, err error) {
 	resp = new(content.PublishQuestionResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.PublishQuestionData)
 
 	if in.UserId <= 0 {

@@ -26,8 +26,6 @@ func NewAcceptAnswerLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Acce
 
 func (l *AcceptAnswerLogic) AcceptAnswer(in *content.AcceptAnswerRequest) (resp *content.AcceptAnswerResponse, err error) {
 	resp = new(content.AcceptAnswerResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	if in.UserId <= 0 {
 		resp.Code = int64(code.QAUserIdInvalid.Code())

@@ -27,8 +27,6 @@ func NewAdminPendingListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListRequest) (resp *content.AdminPendingListResponse, err error) {
 	resp = new(content.AdminPendingListResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.SearchData)
 	resp.Data.Items = make([]*content.SearchItem, 0)
 

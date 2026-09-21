@@ -27,8 +27,6 @@ func NewAnswerListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Answer
 
 func (l *AnswerListLogic) AnswerList(in *content.AnswerListRequest) (resp *content.AnswerListResponse, err error) {
 	resp = new(content.AnswerListResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.AnswerListData)
 	resp.Data.Items = make([]*content.AnswerItem, 0)
 

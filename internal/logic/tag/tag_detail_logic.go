@@ -26,8 +26,6 @@ func NewTagDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TagDeta
 
 func (l *TagDetailLogic) TagDetail(in *content.TagDetailRequest) (resp *content.TagDetailResponse, err error) {
 	resp = new(content.TagDetailResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.TagItem)
 
 	if in.TagId == 0 {

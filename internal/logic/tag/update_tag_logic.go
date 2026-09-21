@@ -26,8 +26,6 @@ func NewUpdateTagLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateT
 
 func (l *UpdateTagLogic) UpdateTag(in *content.UpdateTagRequest) (resp *content.UpdateTagResponse, err error) {
 	resp = new(content.UpdateTagResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	if in.TagId == 0 {
 		resp.Code = int64(code.TagIdEmpty.Code())

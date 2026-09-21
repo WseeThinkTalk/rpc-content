@@ -28,8 +28,6 @@ func NewSearchQuestionsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *S
 
 func (l *SearchQuestionsLogic) SearchQuestions(in *content.SearchQuestionsRequest) (resp *content.SearchQuestionsResponse, err error) {
 	resp = new(content.SearchQuestionsResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.SearchQuestionsData)
 	resp.Data.Items = make([]*content.SearchQuestionItem, 0)
 

@@ -26,8 +26,6 @@ func NewTagsByResourceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ta
 
 func (l *TagsByResourceLogic) TagsByResource(in *content.TagsByResourceRequest) (resp *content.TagsByResourceResponse, err error) {
 	resp = new(content.TagsByResourceResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = make([]*content.TagItem, 0)
 
 	if in.BizId == "" {

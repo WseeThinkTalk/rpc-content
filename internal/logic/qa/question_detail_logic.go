@@ -26,8 +26,6 @@ func NewQuestionDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Qu
 
 func (l *QuestionDetailLogic) QuestionDetail(in *content.QuestionDetailRequest) (resp *content.QuestionDetailResponse, err error) {
 	resp = new(content.QuestionDetailResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.QuestionItem)
 
 	if in.QuestionId == 0 {

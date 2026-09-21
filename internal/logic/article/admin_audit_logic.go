@@ -29,7 +29,7 @@ func (l *AdminAuditLogic) AdminAudit(in *content.AdminAuditRequest) (resp *conte
 	resp = new(content.AdminAuditResponse)
 
 	if int(in.Status) != types.ArticleStatusNotPass && int(in.Status) != types.ArticleStatusVisible {
-		resp.Code = 400
+		resp.Code = int64(code.RequestErr.Code())
 		resp.Msg = "无效的审核状态，仅允许 1=拒绝 或 2=通过"
 		return resp, nil
 	}
@@ -46,7 +46,7 @@ func (l *AdminAuditLogic) AdminAudit(in *content.AdminAuditRequest) (resp *conte
 		return resp, nil
 	}
 	if article.Status != types.ArticleStatusPending {
-		resp.Code = 400
+		resp.Code = int64(code.RequestErr.Code())
 		resp.Msg = "仅待审核状态的文章可以审核"
 		return resp, nil
 	}

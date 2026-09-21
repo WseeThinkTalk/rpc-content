@@ -4,8 +4,9 @@ import "rpc-content/pkg/xcode"
 
 var (
 	// Common
-	ServerErr = xcode.ServerErr
-	NotFound  = xcode.NotFound
+	ServerErr  = xcode.ServerErr
+	NotFound   = xcode.NotFound
+	RequestErr = xcode.RequestErr
 
 	// Article (60000+)
 	SortTypeInvalid         = xcode.New(60001, "排序类型无效")

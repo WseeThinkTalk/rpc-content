@@ -28,25 +28,36 @@ func NewAnswerQuestionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *An
 
 func (l *AnswerQuestionLogic) AnswerQuestion(in *content.AnswerQuestionRequest) (resp *content.AnswerQuestionResponse, err error) {
 	resp = new(content.AnswerQuestionResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.AnswerQuestionData)
 
 	if in.UserId <= 0 {
-		return nil, code.QAUserIdInvalid
+		resp.Code = int64(code.QAUserIdInvalid.Code())
+		resp.Msg = code.QAUserIdInvalid.Message()
+		return resp, nil
 	}
 	if in.QuestionId == 0 {
-		return nil, code.QuestionIdEmpty
+		resp.Code = int64(code.QuestionIdEmpty.Code())
+		resp.Msg = code.QuestionIdEmpty.Message()
+		return resp, nil
 	}
 	if len(in.Content) == 0 {
-		return nil, code.ContentEmpty
+		resp.Code = int64(code.ContentEmpty.Code())
+		resp.Msg = code.ContentEmpty.Message()
+		return resp, nil
 	}
 
 	q, err := l.svcCtx.QuestionModel.FindOne(l.ctx, in.QuestionId)
 	if err != nil {
-		l.Errorf("[AnswerQuestion] FindOne question err: %v id: %d", err, in.QuestionId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if q == nil || q.Status == 1 {
-		return nil, code.QuestionNotFound
+		resp.Code = int64(code.QuestionNotFound.Code())
+		resp.Msg = code.QuestionNotFound.Message()
+		return resp, nil
 	}
 
 	ans := &model.Answer{
@@ -58,8 +69,9 @@ func (l *AnswerQuestionLogic) AnswerQuestion(in *content.AnswerQuestionRequest) 
 		UpdateTime: time.Now(),
 	}
 	if err := l.svcCtx.AnswerModel.Insert(l.ctx, ans); err != nil {
-		l.Errorf("[AnswerQuestion] Insert err: %v req: %+v", err, in)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	_ = l.svcCtx.QuestionModel.IncrAnswerNum(l.ctx, in.QuestionId)

@@ -26,29 +26,41 @@ func NewQuestionDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Qu
 
 func (l *QuestionDeleteLogic) QuestionDelete(in *content.QuestionDeleteRequest) (resp *content.QuestionDeleteResponse, err error) {
 	resp = new(content.QuestionDeleteResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if in.UserId <= 0 {
-		return nil, code.QAUserIdInvalid
+		resp.Code = int64(code.QAUserIdInvalid.Code())
+		resp.Msg = code.QAUserIdInvalid.Message()
+		return resp, nil
 	}
 	if in.QuestionId == 0 {
-		return nil, code.QuestionIdEmpty
+		resp.Code = int64(code.QuestionIdEmpty.Code())
+		resp.Msg = code.QuestionIdEmpty.Message()
+		return resp, nil
 	}
 
 	q, err := l.svcCtx.QuestionModel.FindOne(l.ctx, in.QuestionId)
 	if err != nil {
-		l.Errorf("[QuestionDelete] FindOne err: %v id: %d", err, in.QuestionId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if q == nil {
-		return nil, code.QuestionNotFound
+		resp.Code = int64(code.QuestionNotFound.Code())
+		resp.Msg = code.QuestionNotFound.Message()
+		return resp, nil
 	}
 	if q.AuthorID != in.UserId {
-		return nil, code.NotQuestionAuthor
+		resp.Code = int64(code.NotQuestionAuthor.Code())
+		resp.Msg = code.NotQuestionAuthor.Message()
+		return resp, nil
 	}
 
 	if err := l.svcCtx.QuestionModel.UpdateFields(l.ctx, in.QuestionId, map[string]interface{}{"status": 1}); err != nil {
-		l.Errorf("[QuestionDelete] UpdateFields err: %v id: %d", err, in.QuestionId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	return resp, nil

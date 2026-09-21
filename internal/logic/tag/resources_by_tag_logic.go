@@ -29,11 +29,16 @@ func NewResourcesByTagLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Re
 
 func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) (resp *content.ResourcesByTagResponse, err error) {
 	resp = new(content.ResourcesByTagResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.ResourcesByTagData)
 	resp.Data.Items = make([]*content.ResourceItem, 0)
 
 	if in.TagId == 0 {
-		return nil, code.TagIdEmpty
+		resp.Data = nil
+		resp.Code = int64(code.TagIdEmpty.Code())
+		resp.Msg = code.TagIdEmpty.Message()
+		return resp, nil
 	}
 	if in.PageSize == 0 {
 		in.PageSize = types.DefaultPageSize
@@ -53,8 +58,10 @@ func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) 
 		trs, err = l.svcCtx.TagResourceModel.FindResourcesByTagID(l.ctx, in.TagId, in.Cursor, in.PageSize+1)
 	}
 	if err != nil {
-		l.Logger.Errorf("[ResourcesByTag] query err: %v tagId: %d bizId: %s", err, in.TagId, in.BizId)
-		return nil, err
+		resp.Data = nil
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	if len(trs) > int(in.PageSize) {

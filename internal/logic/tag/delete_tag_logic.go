@@ -26,24 +26,32 @@ func NewDeleteTagLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DeleteT
 
 func (l *DeleteTagLogic) DeleteTag(in *content.DeleteTagRequest) (resp *content.DeleteTagResponse, err error) {
 	resp = new(content.DeleteTagResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if in.TagId == 0 {
-		return nil, code.TagIdEmpty
+		resp.Code = int64(code.TagIdEmpty.Code())
+		resp.Msg = code.TagIdEmpty.Message()
+		return resp, nil
 	}
 
 	tag, err := l.svcCtx.TagModel.FindOne(l.ctx, in.TagId)
 	if err != nil {
-		l.Logger.Errorf("[DeleteTag] TagModel.FindOne err: %v tagId: %d", err, in.TagId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if tag == nil {
-		return nil, code.TagNotFound
+		resp.Code = int64(code.TagNotFound.Code())
+		resp.Msg = code.TagNotFound.Message()
+		return resp, nil
 	}
 
 	err = l.svcCtx.TagModel.Delete(l.ctx, in.TagId)
 	if err != nil {
-		l.Logger.Errorf("[DeleteTag] TagModel.Delete err: %v tagId: %d", err, in.TagId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	return resp, nil

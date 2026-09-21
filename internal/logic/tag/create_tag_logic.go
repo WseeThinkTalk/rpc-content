@@ -28,22 +28,31 @@ func NewCreateTagLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CreateT
 
 func (l *CreateTagLogic) CreateTag(in *content.CreateTagRequest) (resp *content.CreateTagResponse, err error) {
 	resp = new(content.CreateTagResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.CreateTagData)
 
 	if in.TagName == "" {
-		return nil, code.TagNameEmpty
+		resp.Code = int64(code.TagNameEmpty.Code())
+		resp.Msg = code.TagNameEmpty.Message()
+		return resp, nil
 	}
 	if len(in.TagName) > 32 {
-		return nil, code.TagNameTooLong
+		resp.Code = int64(code.TagNameTooLong.Code())
+		resp.Msg = code.TagNameTooLong.Message()
+		return resp, nil
 	}
 
 	exist, err := l.svcCtx.TagModel.FindByName(l.ctx, in.TagName)
 	if err != nil {
-		l.Logger.Errorf("[CreateTag] TagModel.FindByName err: %v tagName: %s", err, in.TagName)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if exist != nil {
-		return nil, code.TagNameExists
+		resp.Code = int64(code.TagNameExists.Code())
+		resp.Msg = code.TagNameExists.Message()
+		return resp, nil
 	}
 
 	tag := &model.Tag{
@@ -53,8 +62,9 @@ func (l *CreateTagLogic) CreateTag(in *content.CreateTagRequest) (resp *content.
 		UpdateTime: time.Now(),
 	}
 	if err := l.svcCtx.TagModel.Insert(l.ctx, tag); err != nil {
-		l.Logger.Errorf("[CreateTag] TagModel.Insert err: %v tag: %+v", err, tag)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	resp.Data.TagId = tag.ID

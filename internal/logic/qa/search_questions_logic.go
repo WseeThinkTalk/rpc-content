@@ -28,6 +28,8 @@ func NewSearchQuestionsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *S
 
 func (l *SearchQuestionsLogic) SearchQuestions(in *content.SearchQuestionsRequest) (resp *content.SearchQuestionsResponse, err error) {
 	resp = new(content.SearchQuestionsResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.SearchQuestionsData)
 	resp.Data.Items = make([]*content.SearchQuestionItem, 0)
 
@@ -48,15 +50,17 @@ func (l *SearchQuestionsLogic) SearchQuestions(in *content.SearchQuestionsReques
 		l.svcCtx.Es.Search.WithBody(strings.NewReader(query)),
 	)
 	if err != nil {
-		l.Errorf("[SearchQuestions] ES search err: %v keyword: %s", err, in.Keyword)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	defer res.Body.Close()
 
 	var result esQuestionResult
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		l.Errorf("[SearchQuestions] decode err: %v", err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	hits := result.Hits.Hits

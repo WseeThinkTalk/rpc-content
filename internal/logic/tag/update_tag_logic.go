@@ -26,34 +26,48 @@ func NewUpdateTagLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateT
 
 func (l *UpdateTagLogic) UpdateTag(in *content.UpdateTagRequest) (resp *content.UpdateTagResponse, err error) {
 	resp = new(content.UpdateTagResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if in.TagId == 0 {
-		return nil, code.TagIdEmpty
+		resp.Code = int64(code.TagIdEmpty.Code())
+		resp.Msg = code.TagIdEmpty.Message()
+		return resp, nil
 	}
 	if in.TagName == "" {
-		return nil, code.TagNameEmpty
+		resp.Code = int64(code.TagNameEmpty.Code())
+		resp.Msg = code.TagNameEmpty.Message()
+		return resp, nil
 	}
 	if len(in.TagName) > 32 {
-		return nil, code.TagNameTooLong
+		resp.Code = int64(code.TagNameTooLong.Code())
+		resp.Msg = code.TagNameTooLong.Message()
+		return resp, nil
 	}
 
 	tag, err := l.svcCtx.TagModel.FindOne(l.ctx, in.TagId)
 	if err != nil {
-		l.Logger.Errorf("[UpdateTag] TagModel.FindOne err: %v tagId: %d", err, in.TagId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if tag == nil {
-		return nil, code.TagNotFound
+		resp.Code = int64(code.TagNotFound.Code())
+		resp.Msg = code.TagNotFound.Message()
+		return resp, nil
 	}
 
 	if in.TagName != tag.TagName {
 		exist, err := l.svcCtx.TagModel.FindByName(l.ctx, in.TagName)
 		if err != nil {
-			l.Logger.Errorf("[UpdateTag] TagModel.FindByName err: %v tagName: %s", err, in.TagName)
-			return nil, err
+			resp.Code = 500
+			resp.Msg = err.Error()
+			return resp, nil
 		}
 		if exist != nil {
-			return nil, code.TagNameExists
+			resp.Code = int64(code.TagNameExists.Code())
+			resp.Msg = code.TagNameExists.Message()
+			return resp, nil
 		}
 	}
 
@@ -62,8 +76,9 @@ func (l *UpdateTagLogic) UpdateTag(in *content.UpdateTagRequest) (resp *content.
 		"tag_desc": in.TagDesc,
 	})
 	if err != nil {
-		l.Logger.Errorf("[UpdateTag] TagModel.UpdateFields err: %v tagId: %d", err, in.TagId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	return resp, nil

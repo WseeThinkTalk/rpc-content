@@ -33,14 +33,20 @@ func NewArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Articles
 
 func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.ArticlesResponse, err error) {
 	resp = new(content.ArticlesResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.ArticlesData)
 	resp.Data.Articles = make([]*content.ArticleItem, 0)
 
 	if in.SortType != types.SortPublishTime && in.SortType != types.SortLikeCount {
-		return nil, code.SortTypeInvalid
+		resp.Code = int64(code.SortTypeInvalid.Code())
+		resp.Msg = code.SortTypeInvalid.Message()
+		return resp, nil
 	}
 	if in.UserId <= 0 {
-		return nil, code.UserIdInvalid
+		resp.Code = int64(code.UserIdInvalid.Code())
+		resp.Msg = code.UserIdInvalid.Message()
+		return resp, nil
 	}
 	if in.PageSize == 0 {
 		in.PageSize = types.DefaultPageSize
@@ -63,18 +69,16 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 	)
 
 	key := articlesKey(in.UserId, in.SortType)
-	b, err := l.svcCtx.BizRedis.ExistsCtx(l.ctx, key)
-	if err != nil {
-		l.Logger.Errorf("[Articles] BizRedis.ExistsCtx error: %v", err)
-	}
+	b, _ := l.svcCtx.BizRedis.ExistsCtx(l.ctx, key)
 
 	if b {
 		isCache = true
 		_ = l.svcCtx.BizRedis.ExpireCtx(l.ctx, key, 3600*24*2)
 		pairs, err := l.svcCtx.BizRedis.ZrevrangebyscoreWithScoresAndLimitCtx(l.ctx, key, 0, in.Cursor, 0, int(in.PageSize))
 		if err != nil {
-			l.Logger.Errorf("[Articles] BizRedis.ZrevrangebyscoreWithScoresAndLimitCtx error: %v", err)
-			return nil, err
+			resp.Code = 500
+			resp.Msg = err.Error()
+			return resp, nil
 		}
 
 		var scores []int64
@@ -109,8 +113,9 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 	} else {
 		articleModels, err = l.svcCtx.ArticleModel.ArticlesByUserIdWithoutCursor(l.ctx, in.UserId, -1)
 		if err != nil {
-			l.Logger.Errorf("[Articles] ArticleModel.ArticlesByUserIdWithoutCursor error: %v req: %v", err, in)
-			return nil, err
+			resp.Code = 500
+			resp.Msg = err.Error()
+			return resp, nil
 		}
 
 		if len(articleModels) == 0 {
@@ -167,8 +172,9 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 			if errors.Is(err, model.ErrNotFound) {
 				continue
 			}
-			l.Logger.Errorf("[Articles] FindOne artId: %d error: %v", artId, err)
-			return nil, err
+			resp.Code = 500
+			resp.Msg = err.Error()
+			return resp, nil
 		}
 		items = append(items, &content.ArticleItem{
 			Id:           art.Id,

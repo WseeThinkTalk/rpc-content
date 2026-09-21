@@ -28,38 +28,44 @@ func NewArticleDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Art
 
 func (l *ArticleDeleteLogic) ArticleDelete(in *content.ArticleDeleteRequest) (resp *content.ArticleDeleteResponse, err error) {
 	resp = new(content.ArticleDeleteResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if in.UserId <= 0 {
-		return nil, code.UserIdInvalid
+		resp.Code = int64(code.UserIdInvalid.Code())
+		resp.Msg = code.UserIdInvalid.Message()
+		return resp, nil
 	}
 	if in.ArticleId <= 0 {
-		return nil, code.ArticleIdInvalid
+		resp.Code = int64(code.ArticleIdInvalid.Code())
+		resp.Msg = code.ArticleIdInvalid.Message()
+		return resp, nil
 	}
 	article, err := l.svcCtx.ArticleModel.FindOne(l.ctx, in.ArticleId)
 	if err != nil {
-		l.Logger.Errorf("ArticleDelete FindOne req: %v error: %v", in, err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
+	}
+	if article == nil {
+		resp.Code = 404
+		resp.Msg = "文章不存在"
+		return resp, nil
 	}
 	if article.AuthorId != in.UserId {
-		return nil, xcode.AccessDenied
+		resp.Code = int64(xcode.AccessDenied.Code())
+		resp.Msg = xcode.AccessDenied.Message()
+		return resp, nil
 	}
 	err = l.svcCtx.ArticleModel.UpdateArticleStatus(l.ctx, in.ArticleId, types.ArticleStatusUserDelete)
 	if err != nil {
-		l.Logger.Errorf("UpdateArticleStatus req: %v error: %v", in, err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
-	_, err = l.svcCtx.BizRedis.ZremCtx(l.ctx, articlesKey(in.UserId, types.SortPublishTime), in.ArticleId)
-	if err != nil {
-		l.Logger.Errorf("ZremCtx req: %v error: %v", in, err)
-	}
-	_, err = l.svcCtx.BizRedis.ZremCtx(l.ctx, articlesKey(in.UserId, types.SortLikeCount), in.ArticleId)
-	if err != nil {
-		l.Logger.Errorf("ZremCtx req: %v error: %v", in, err)
-	}
-	_, err = l.svcCtx.BizRedis.ZremCtx(l.ctx, "biz#articles#global", in.ArticleId)
-	if err != nil {
-		l.Logger.Errorf("ZremCtx global req: %v error: %v", in, err)
-	}
+	_, _ = l.svcCtx.BizRedis.ZremCtx(l.ctx, articlesKey(in.UserId, types.SortPublishTime), in.ArticleId)
+	_, _ = l.svcCtx.BizRedis.ZremCtx(l.ctx, articlesKey(in.UserId, types.SortLikeCount), in.ArticleId)
+	_, _ = l.svcCtx.BizRedis.ZremCtx(l.ctx, "biz#articles#global", in.ArticleId)
 
 	return resp, nil
 }

@@ -27,15 +27,27 @@ func NewArticleDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Art
 
 func (l *ArticleDetailLogic) ArticleDetail(in *content.ArticleDetailRequest) (resp *content.ArticleDetailResponse, err error) {
 	resp = new(content.ArticleDetailResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.ArticleItem)
 
 	article, err := l.svcCtx.ArticleModel.FindOne(l.ctx, in.ArticleId)
 	if err != nil {
+		resp.Data = nil
 		if errors.Is(err, sqlx.ErrNotFound) {
-			resp.Data = nil
+			resp.Code = 404
+			resp.Msg = "文章不存在"
 			return resp, nil
 		}
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
+	}
+	if article == nil {
+		resp.Data = nil
+		resp.Code = 404
+		resp.Msg = "文章不存在"
+		return resp, nil
 	}
 
 	resp.Data.Id = article.Id

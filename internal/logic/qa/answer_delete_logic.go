@@ -26,29 +26,41 @@ func NewAnswerDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Answ
 
 func (l *AnswerDeleteLogic) AnswerDelete(in *content.AnswerDeleteRequest) (resp *content.AnswerDeleteResponse, err error) {
 	resp = new(content.AnswerDeleteResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if in.UserId <= 0 {
-		return nil, code.QAUserIdInvalid
+		resp.Code = int64(code.QAUserIdInvalid.Code())
+		resp.Msg = code.QAUserIdInvalid.Message()
+		return resp, nil
 	}
 	if in.AnswerId == 0 {
-		return nil, code.AnswerNotFound
+		resp.Code = int64(code.AnswerNotFound.Code())
+		resp.Msg = code.AnswerNotFound.Message()
+		return resp, nil
 	}
 
 	a, err := l.svcCtx.AnswerModel.FindOne(l.ctx, in.AnswerId)
 	if err != nil {
-		l.Errorf("[AnswerDelete] FindOne err: %v id: %d", err, in.AnswerId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if a == nil || a.Status == 1 {
-		return nil, code.AnswerNotFound
+		resp.Code = int64(code.AnswerNotFound.Code())
+		resp.Msg = code.AnswerNotFound.Message()
+		return resp, nil
 	}
 	if a.AuthorID != in.UserId {
-		return nil, code.NotAnswerAuthor
+		resp.Code = int64(code.NotAnswerAuthor.Code())
+		resp.Msg = code.NotAnswerAuthor.Message()
+		return resp, nil
 	}
 
 	if err := l.svcCtx.AnswerModel.UpdateFields(l.ctx, in.AnswerId, map[string]interface{}{"status": 1}); err != nil {
-		l.Errorf("[AnswerDelete] UpdateFields err: %v id: %d", err, in.AnswerId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	_ = l.svcCtx.QuestionModel.DecrAnswerNum(l.ctx, a.QuestionID)
 

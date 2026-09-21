@@ -37,25 +37,39 @@ const (
 
 func (l *PublishLogic) Publish(in *content.PublishRequest) (resp *content.PublishResponse, err error) {
 	resp = new(content.PublishResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.PublishData)
 
 	if in.UserId <= 0 {
-		return nil, code.UserIdInvalid
+		resp.Code = int64(code.UserIdInvalid.Code())
+		resp.Msg = code.UserIdInvalid.Message()
+		return resp, nil
 	}
 	if len(in.Title) == 0 {
-		return nil, code.ArticleTitleCantEmpty
+		resp.Code = int64(code.ArticleTitleCantEmpty.Code())
+		resp.Msg = code.ArticleTitleCantEmpty.Message()
+		return resp, nil
 	}
 	if len(in.Title) > maxTitleLength {
-		return nil, code.ArticleTitleTooLong
+		resp.Code = int64(code.ArticleTitleTooLong.Code())
+		resp.Msg = code.ArticleTitleTooLong.Message()
+		return resp, nil
 	}
 	if len(in.Content) == 0 {
-		return nil, code.ArticleContentCantEmpty
+		resp.Code = int64(code.ArticleContentCantEmpty.Code())
+		resp.Msg = code.ArticleContentCantEmpty.Message()
+		return resp, nil
 	}
 	if len(in.Content) > maxContentLength {
-		return nil, code.ArticleContentTooLong
+		resp.Code = int64(code.ArticleContentTooLong.Code())
+		resp.Msg = code.ArticleContentTooLong.Message()
+		return resp, nil
 	}
 	if len(in.Description) > maxDescriptionLength {
-		return nil, code.ArticleDescTooLong
+		resp.Code = int64(code.ArticleDescTooLong.Code())
+		resp.Msg = code.ArticleDescTooLong.Message()
+		return resp, nil
 	}
 
 	ret, err := l.svcCtx.ArticleModel.Insert(l.ctx, &model.Article{
@@ -70,14 +84,16 @@ func (l *PublishLogic) Publish(in *content.PublishRequest) (resp *content.Publis
 		UpdateTime:  time.Now(),
 	})
 	if err != nil {
-		l.Logger.Errorf("Publish Insert req: %v error: %v", in, err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	articleId, err := ret.LastInsertId()
 	if err != nil {
-		l.Logger.Errorf("LastInsertId error: %v", err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	var (
@@ -87,17 +103,11 @@ func (l *PublishLogic) Publish(in *content.PublishRequest) (resp *content.Publis
 	)
 	b, _ := l.svcCtx.BizRedis.ExistsCtx(l.ctx, publishTimeKey)
 	if b {
-		_, err = l.svcCtx.BizRedis.ZaddCtx(l.ctx, publishTimeKey, time.Now().Unix(), articleIdStr)
-		if err != nil {
-			logx.Errorf("ZaddCtx req: %v error: %v", in, err)
-		}
+		_, _ = l.svcCtx.BizRedis.ZaddCtx(l.ctx, publishTimeKey, time.Now().Unix(), articleIdStr)
 	}
 	b, _ = l.svcCtx.BizRedis.ExistsCtx(l.ctx, likeNumKey)
 	if b {
-		_, err = l.svcCtx.BizRedis.ZaddCtx(l.ctx, likeNumKey, 0, articleIdStr)
-		if err != nil {
-			logx.Errorf("ZaddCtx req: %v error: %v", in, err)
-		}
+		_, _ = l.svcCtx.BizRedis.ZaddCtx(l.ctx, likeNumKey, 0, articleIdStr)
 	}
 
 	// 关联标签

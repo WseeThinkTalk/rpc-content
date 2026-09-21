@@ -26,19 +26,26 @@ func NewTagsByResourceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ta
 
 func (l *TagsByResourceLogic) TagsByResource(in *content.TagsByResourceRequest) (resp *content.TagsByResourceResponse, err error) {
 	resp = new(content.TagsByResourceResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = make([]*content.TagItem, 0)
 
 	if in.BizId == "" {
-		return nil, code.BizIdEmpty
+		resp.Code = int64(code.BizIdEmpty.Code())
+		resp.Msg = code.BizIdEmpty.Message()
+		return resp, nil
 	}
 	if in.TargetId == 0 {
-		return nil, code.TargetIdEmpty
+		resp.Code = int64(code.TargetIdEmpty.Code())
+		resp.Msg = code.TargetIdEmpty.Message()
+		return resp, nil
 	}
 
 	trs, err := l.svcCtx.TagResourceModel.FindTagsByBizIDAndTargetID(l.ctx, in.BizId, in.TargetId)
 	if err != nil {
-		l.Logger.Errorf("[TagsByResource] TagResourceModel.FindTagsByBizIDAndTargetID err: %v req: %+v", err, in)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if len(trs) == 0 {
 		return resp, nil
@@ -51,14 +58,12 @@ func (l *TagsByResourceLogic) TagsByResource(in *content.TagsByResourceRequest) 
 
 	tags, err := l.svcCtx.TagModel.FindByIds(l.ctx, tagIds)
 	if err != nil {
-		l.Logger.Errorf("[TagsByResource] TagModel.FindByIds err: %v tagIds: %v", err, tagIds)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
-	countMap, err := l.svcCtx.TagResourceModel.CountByTagIDs(l.ctx, tagIds)
-	if err != nil {
-		l.Logger.Errorf("[TagsByResource] TagResourceModel.CountByTagIDs err: %v", err)
-	}
+	countMap, _ := l.svcCtx.TagResourceModel.CountByTagIDs(l.ctx, tagIds)
 
 	resp.Data = buildTagItems(tags, countMap)
 	return resp, nil

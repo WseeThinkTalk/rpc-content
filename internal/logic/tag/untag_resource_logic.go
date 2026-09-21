@@ -26,21 +26,30 @@ func NewUntagResourceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Unt
 
 func (l *UntagResourceLogic) UntagResource(in *content.UntagResourceRequest) (resp *content.UntagResourceResponse, err error) {
 	resp = new(content.UntagResourceResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if in.BizId == "" {
-		return nil, code.BizIdEmpty
+		resp.Code = int64(code.BizIdEmpty.Code())
+		resp.Msg = code.BizIdEmpty.Message()
+		return resp, nil
 	}
 	if in.TargetId == 0 {
-		return nil, code.TargetIdEmpty
+		resp.Code = int64(code.TargetIdEmpty.Code())
+		resp.Msg = code.TargetIdEmpty.Message()
+		return resp, nil
 	}
 	if in.TagId == 0 {
-		return nil, code.TagIdEmpty
+		resp.Code = int64(code.TagIdEmpty.Code())
+		resp.Msg = code.TagIdEmpty.Message()
+		return resp, nil
 	}
 
 	exist, err := l.svcCtx.TagResourceModel.FindByTagIDAndBizIDAndTargetID(l.ctx, in.TagId, in.BizId, in.TargetId)
 	if err != nil {
-		l.Logger.Errorf("[UntagResource] TagResourceModel.FindByTagIDAndBizIDAndTargetID err: %v req: %+v", err, in)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if exist == nil {
 		return resp, nil
@@ -48,8 +57,9 @@ func (l *UntagResourceLogic) UntagResource(in *content.UntagResourceRequest) (re
 
 	err = l.svcCtx.TagResourceModel.Delete(l.ctx, exist.ID)
 	if err != nil {
-		l.Logger.Errorf("[UntagResource] TagResourceModel.Delete err: %v id: %d", err, exist.ID)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	return resp, nil

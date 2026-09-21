@@ -31,16 +31,24 @@ func NewPublishQuestionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *P
 
 func (l *PublishQuestionLogic) PublishQuestion(in *content.PublishQuestionRequest) (resp *content.PublishQuestionResponse, err error) {
 	resp = new(content.PublishQuestionResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.PublishQuestionData)
 
 	if in.UserId <= 0 {
-		return nil, code.QAUserIdInvalid
+		resp.Code = int64(code.QAUserIdInvalid.Code())
+		resp.Msg = code.QAUserIdInvalid.Message()
+		return resp, nil
 	}
 	if len(in.Title) == 0 {
-		return nil, code.TitleEmpty
+		resp.Code = int64(code.TitleEmpty.Code())
+		resp.Msg = code.TitleEmpty.Message()
+		return resp, nil
 	}
 	if len(in.Content) == 0 {
-		return nil, code.ContentEmpty
+		resp.Code = int64(code.ContentEmpty.Code())
+		resp.Msg = code.ContentEmpty.Message()
+		return resp, nil
 	}
 
 	q := &model.Question{
@@ -53,8 +61,9 @@ func (l *PublishQuestionLogic) PublishQuestion(in *content.PublishQuestionReques
 		UpdateTime: time.Now(),
 	}
 	if err := l.svcCtx.QuestionModel.Insert(l.ctx, q); err != nil {
-		l.Errorf("[PublishQuestion] Insert err: %v req: %+v", err, in)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	key := questionsKey(in.UserId, types.SortPublishTime)

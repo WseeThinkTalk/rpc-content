@@ -53,8 +53,9 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 			var err error
 			allModels, err = l.svcCtx.ArticleModel.ArticlesAllVisible(l.ctx, 2)
 			if err != nil {
-				l.Logger.Errorf("[SearchArticles] ArticlesAllVisible error: %v", err)
-				return nil, err
+				resp.Code = 500
+				resp.Msg = err.Error()
+				return resp, nil
 			}
 			sort.SliceStable(allModels, func(i, j int) bool {
 				if allModels[i].LikeNum == allModels[j].LikeNum {
@@ -70,8 +71,9 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 			if len(cachedIds) > 0 {
 				models, err := l.svcCtx.ArticleModel.FindByIds(l.ctx, cachedIds)
 				if err != nil {
-					l.Logger.Errorf("[SearchArticles] FindByIds error: %v", err)
-					return nil, err
+					resp.Code = 500
+					resp.Msg = err.Error()
+					return resp, nil
 				}
 				sort.SliceStable(models, func(i, j int) bool {
 					return models[i].PublishTime.After(models[j].PublishTime)
@@ -80,8 +82,9 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 			} else {
 				models, err := l.svcCtx.ArticleModel.ArticlesAllVisible(l.ctx, 2)
 				if err != nil {
-					l.Logger.Errorf("[SearchArticles] ArticlesAllVisible error: %v", err)
-					return nil, err
+					resp.Code = 500
+					resp.Msg = err.Error()
+					return resp, nil
 				}
 				allModels = models
 
@@ -118,8 +121,9 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 
 		articles, err := l.svcCtx.ArticleModel.SearchArticles(l.ctx, in.Keyword, authorIds, 2, int(in.PageSize)+1, in.Cursor)
 		if err != nil {
-			l.Logger.Errorf("[SearchArticles] SearchArticles error: %v", err)
-			return nil, err
+			resp.Code = 500
+			resp.Msg = err.Error()
+			return resp, nil
 		}
 
 		if len(articles) > int(in.PageSize) {
@@ -246,7 +250,6 @@ func populateAuthorNames(ctx context.Context, svcCtx *svc.ServiceContext, items 
 			defer wg.Done()
 			u, err := svcCtx.UserRPC.FindById(ctx, &user.FindByIdRequest{UserId: userId})
 			if err != nil {
-				log.Errorf("[SearchArticles] FindById userId: %d error: %v", userId, err)
 				return
 			}
 			results <- result{authorId: userId, name: u.Username, avatar: u.Avatar}

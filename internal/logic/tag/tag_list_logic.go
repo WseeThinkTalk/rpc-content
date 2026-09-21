@@ -28,6 +28,8 @@ func NewTagListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TagListLo
 
 func (l *TagListLogic) TagList(in *content.TagListRequest) (resp *content.TagListResponse, err error) {
 	resp = new(content.TagListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.TagListData)
 	resp.Data.Items = make([]*content.TagItem, 0)
 
@@ -40,8 +42,10 @@ func (l *TagListLogic) TagList(in *content.TagListRequest) (resp *content.TagLis
 
 	tags, err := l.svcCtx.TagModel.FindByCursor(l.ctx, in.Cursor, in.PageSize+1)
 	if err != nil {
-		l.Logger.Errorf("[TagList] TagModel.FindByCursor err: %v cursor: %d", err, in.Cursor)
-		return nil, err
+		resp.Data = nil
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	var (
@@ -63,10 +67,7 @@ func (l *TagListLogic) TagList(in *content.TagListRequest) (resp *content.TagLis
 	for i, t := range tags {
 		tagIds[i] = t.ID
 	}
-	countMap, err := l.svcCtx.TagResourceModel.CountByTagIDs(l.ctx, tagIds)
-	if err != nil {
-		l.Logger.Errorf("[TagList] TagResourceModel.CountByTagIDs err: %v", err)
-	}
+	countMap, _ := l.svcCtx.TagResourceModel.CountByTagIDs(l.ctx, tagIds)
 
 	for _, t := range tags {
 		items = append(items, &content.TagItem{

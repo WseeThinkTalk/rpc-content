@@ -27,11 +27,15 @@ func NewAnswerListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Answer
 
 func (l *AnswerListLogic) AnswerList(in *content.AnswerListRequest) (resp *content.AnswerListResponse, err error) {
 	resp = new(content.AnswerListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.AnswerListData)
 	resp.Data.Items = make([]*content.AnswerItem, 0)
 
 	if in.QuestionId == 0 {
-		return nil, code.QuestionIdEmpty
+		resp.Code = int64(code.QuestionIdEmpty.Code())
+		resp.Msg = code.QuestionIdEmpty.Message()
+		return resp, nil
 	}
 	if in.PageSize == 0 {
 		in.PageSize = types.DefaultPageSize
@@ -39,8 +43,9 @@ func (l *AnswerListLogic) AnswerList(in *content.AnswerListRequest) (resp *conte
 
 	answers, err := l.svcCtx.AnswerModel.FindByQuestionId(l.ctx, in.QuestionId, in.Cursor, in.PageSize+1)
 	if err != nil {
-		l.Errorf("[AnswerList] FindByQuestionId err: %v questionId: %d", err, in.QuestionId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	var isEnd bool

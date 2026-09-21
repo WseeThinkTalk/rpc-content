@@ -27,6 +27,8 @@ func NewAdminPendingListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListRequest) (resp *content.AdminPendingListResponse, err error) {
 	resp = new(content.AdminPendingListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(content.SearchData)
 	resp.Data.Items = make([]*content.SearchItem, 0)
 
@@ -36,8 +38,9 @@ func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListReq
 
 	articles, err := l.svcCtx.ArticleModel.ArticlesPending(l.ctx, int(in.PageSize)+1, in.Cursor)
 	if err != nil {
-		l.Logger.Errorf("[AdminPendingList] ArticlesPending error: %v", err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	var isEnd bool
@@ -85,7 +88,6 @@ func (l *AdminPendingListLogic) populateAuthorNames(items []*content.SearchItem)
 	for _, item := range items {
 		u, err := l.svcCtx.UserRPC.FindById(l.ctx, &user.FindByIdRequest{UserId: item.AuthorId})
 		if err != nil {
-			l.Logger.Errorf("[AdminPendingList] FindById userId: %d error: %v", item.AuthorId, err)
 			continue
 		}
 		item.AuthorName = u.Username

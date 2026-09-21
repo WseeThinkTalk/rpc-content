@@ -2,7 +2,6 @@ package articlelogic
 
 import (
 	"context"
-	"errors"
 
 	"rpc-content/content"
 	"rpc-content/internal/svc"
@@ -27,35 +26,41 @@ func NewAdminAuditLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AdminA
 
 func (l *AdminAuditLogic) AdminAudit(in *content.AdminAuditRequest) (resp *content.AdminAuditResponse, err error) {
 	resp = new(content.AdminAuditResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if int(in.Status) != types.ArticleStatusNotPass && int(in.Status) != types.ArticleStatusVisible {
-		l.Logger.Errorf("[AdminAudit] invalid status: %d, articleId: %d", in.Status, in.ArticleId)
-		return nil, errors.New("无效的审核状态，仅允许 1=拒绝 或 2=通过")
+		resp.Code = 400
+		resp.Msg = "无效的审核状态，仅允许 1=拒绝 或 2=通过"
+		return resp, nil
 	}
 
 	article, err := l.svcCtx.ArticleModel.FindOne(l.ctx, in.ArticleId)
 	if err != nil {
-		l.Logger.Errorf("[AdminAudit] FindById error: %v, articleId: %d", err, in.ArticleId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if article == nil {
-		return nil, errors.New("文章不存在")
+		resp.Code = 404
+		resp.Msg = "文章不存在"
+		return resp, nil
 	}
 	if article.Status != types.ArticleStatusPending {
-		return nil, errors.New("仅待审核状态的文章可以审核")
+		resp.Code = 400
+		resp.Msg = "仅待审核状态的文章可以审核"
+		return resp, nil
 	}
 
 	err = l.svcCtx.ArticleModel.UpdateArticleStatus(l.ctx, in.ArticleId, int(in.Status))
 	if err != nil {
-		l.Logger.Errorf("[AdminAudit] UpdateArticleStatus error: %v, articleId: %d, status: %d", err, in.ArticleId, in.Status)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	if int(in.Status) == types.ArticleStatusVisible {
-		_, err = l.svcCtx.BizRedis.DelCtx(l.ctx, "biz#articles#global")
-		if err != nil {
-			l.Logger.Errorf("[AdminAudit] DelCtx biz#articles#global error: %v", err)
-		}
+		_, _ = l.svcCtx.BizRedis.DelCtx(l.ctx, "biz#articles#global")
 	}
 
 	return resp, nil

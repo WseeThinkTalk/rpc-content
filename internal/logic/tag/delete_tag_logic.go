@@ -26,8 +26,6 @@ func NewDeleteTagLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DeleteT
 
 func (l *DeleteTagLogic) DeleteTag(in *content.DeleteTagRequest) (resp *content.DeleteTagResponse, err error) {
 	resp = new(content.DeleteTagResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	if in.TagId == 0 {
 		return nil, code.TagIdEmpty

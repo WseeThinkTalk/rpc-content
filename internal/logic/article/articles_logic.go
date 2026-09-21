@@ -33,8 +33,6 @@ func NewArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Articles
 
 func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.ArticlesResponse, err error) {
 	resp = new(content.ArticlesResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.ArticlesData)
 	resp.Data.Articles = make([]*content.ArticleItem, 0)
 

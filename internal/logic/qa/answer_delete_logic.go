@@ -26,8 +26,6 @@ func NewAnswerDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Answ
 
 func (l *AnswerDeleteLogic) AnswerDelete(in *content.AnswerDeleteRequest) (resp *content.AnswerDeleteResponse, err error) {
 	resp = new(content.AnswerDeleteResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	if in.UserId <= 0 {
 		return nil, code.QAUserIdInvalid

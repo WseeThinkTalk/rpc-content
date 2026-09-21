@@ -29,8 +29,6 @@ func NewResourcesByTagLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Re
 
 func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) (resp *content.ResourcesByTagResponse, err error) {
 	resp = new(content.ResourcesByTagResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.ResourcesByTagData)
 	resp.Data.Items = make([]*content.ResourceItem, 0)
 

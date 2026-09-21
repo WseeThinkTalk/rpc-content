@@ -28,8 +28,6 @@ func NewAnswerQuestionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *An
 
 func (l *AnswerQuestionLogic) AnswerQuestion(in *content.AnswerQuestionRequest) (resp *content.AnswerQuestionResponse, err error) {
 	resp = new(content.AnswerQuestionResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.AnswerQuestionData)
 
 	if in.UserId <= 0 {

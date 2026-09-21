@@ -27,8 +27,6 @@ func NewAdminAuditLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AdminA
 
 func (l *AdminAuditLogic) AdminAudit(in *content.AdminAuditRequest) (resp *content.AdminAuditResponse, err error) {
 	resp = new(content.AdminAuditResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	if int(in.Status) != types.ArticleStatusNotPass && int(in.Status) != types.ArticleStatusVisible {
 		l.Logger.Errorf("[AdminAudit] invalid status: %d, articleId: %d", in.Status, in.ArticleId)

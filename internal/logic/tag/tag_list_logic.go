@@ -28,8 +28,6 @@ func NewTagListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TagListLo
 
 func (l *TagListLogic) TagList(in *content.TagListRequest) (resp *content.TagListResponse, err error) {
 	resp = new(content.TagListResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.TagListData)
 	resp.Data.Items = make([]*content.TagItem, 0)
 

@@ -28,8 +28,6 @@ func NewCreateTagLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CreateT
 
 func (l *CreateTagLogic) CreateTag(in *content.CreateTagRequest) (resp *content.CreateTagResponse, err error) {
 	resp = new(content.CreateTagResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.CreateTagData)
 
 	if in.TagName == "" {

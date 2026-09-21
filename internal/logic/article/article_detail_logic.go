@@ -27,8 +27,6 @@ func NewArticleDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Art
 
 func (l *ArticleDetailLogic) ArticleDetail(in *content.ArticleDetailRequest) (resp *content.ArticleDetailResponse, err error) {
 	resp = new(content.ArticleDetailResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.ArticleItem)
 
 	article, err := l.svcCtx.ArticleModel.FindOne(l.ctx, in.ArticleId)

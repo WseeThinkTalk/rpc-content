@@ -26,8 +26,6 @@ func NewUntagResourceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Unt
 
 func (l *UntagResourceLogic) UntagResource(in *content.UntagResourceRequest) (resp *content.UntagResourceResponse, err error) {
 	resp = new(content.UntagResourceResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	if in.BizId == "" {
 		return nil, code.BizIdEmpty

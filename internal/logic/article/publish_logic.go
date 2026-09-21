@@ -37,8 +37,6 @@ const (
 
 func (l *PublishLogic) Publish(in *content.PublishRequest) (resp *content.PublishResponse, err error) {
 	resp = new(content.PublishResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.PublishData)
 
 	if in.UserId <= 0 {

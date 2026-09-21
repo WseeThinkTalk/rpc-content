@@ -27,8 +27,6 @@ func NewQuestionsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Questio
 
 func (l *QuestionsLogic) Questions(in *content.QuestionsRequest) (resp *content.QuestionsResponse, err error) {
 	resp = new(content.QuestionsResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(content.QuestionsData)
 	resp.Data.Items = make([]*content.QuestionItem, 0)
 

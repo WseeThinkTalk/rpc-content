@@ -28,8 +28,6 @@ func NewTagResourceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TagRe
 
 func (l *TagResourceLogic) TagResource(in *content.TagResourceRequest) (resp *content.TagResourceResponse, err error) {
 	resp = new(content.TagResourceResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	if in.BizId == "" {
 		return nil, code.BizIdEmpty

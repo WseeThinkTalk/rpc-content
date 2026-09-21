@@ -52,7 +52,7 @@ func (l *TagResourceLogic) TagResource(in *content.TagResourceRequest) (resp *co
 
 	tag, err := l.svcCtx.TagModel.FindOne(l.ctx, in.TagId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -64,7 +64,7 @@ func (l *TagResourceLogic) TagResource(in *content.TagResourceRequest) (resp *co
 
 	exist, err := l.svcCtx.TagResourceModel.FindByTagIDAndBizIDAndTargetID(l.ctx, in.TagId, in.BizId, in.TargetId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -83,7 +83,7 @@ func (l *TagResourceLogic) TagResource(in *content.TagResourceRequest) (resp *co
 		UpdateTime: time.Now(),
 	}
 	if err := l.svcCtx.TagResourceModel.Insert(l.ctx, tr); err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

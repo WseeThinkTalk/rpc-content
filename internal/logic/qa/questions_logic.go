@@ -1,6 +1,7 @@
 package qalogic
 
 import (
+	"rpc-content/pkg/code"
 	"context"
 	"time"
 
@@ -42,7 +43,7 @@ func (l *QuestionsLogic) Questions(in *content.QuestionsRequest) (resp *content.
 
 	questions, err := l.svcCtx.QuestionModel.QuestionsByUserId(l.ctx, in.UserId, int(in.SortType), in.Cursor, in.PageSize+1)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

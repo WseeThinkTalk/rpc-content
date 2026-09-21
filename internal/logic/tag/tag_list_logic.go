@@ -1,6 +1,7 @@
 package taglogic
 
 import (
+	"rpc-content/pkg/code"
 	"context"
 	"math"
 
@@ -40,8 +41,7 @@ func (l *TagListLogic) TagList(in *content.TagListRequest) (resp *content.TagLis
 
 	tags, err := l.svcCtx.TagModel.FindByCursor(l.ctx, in.Cursor, in.PageSize+1)
 	if err != nil {
-		resp.Data = nil
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

@@ -82,14 +82,14 @@ func (l *PublishLogic) Publish(in *content.PublishRequest) (resp *content.Publis
 		UpdateTime:  time.Now(),
 	})
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
 
 	articleId, err := ret.LastInsertId()
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

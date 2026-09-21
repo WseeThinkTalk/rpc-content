@@ -29,7 +29,6 @@ func (l *QuestionDetailLogic) QuestionDetail(in *content.QuestionDetailRequest) 
 	resp.Data = new(content.QuestionItem)
 
 	if in.QuestionId == 0 {
-		resp.Data = nil
 		resp.Code = int64(code.QuestionIdEmpty.Code())
 		resp.Msg = code.QuestionIdEmpty.Message()
 		return resp, nil
@@ -37,13 +36,11 @@ func (l *QuestionDetailLogic) QuestionDetail(in *content.QuestionDetailRequest) 
 
 	q, err := l.svcCtx.QuestionModel.FindOne(l.ctx, in.QuestionId)
 	if err != nil {
-		resp.Data = nil
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
 	if q == nil || q.Status == 1 {
-		resp.Data = nil
 		resp.Code = int64(code.QuestionNotFound.Code())
 		resp.Msg = code.QuestionNotFound.Message()
 		return resp, nil

@@ -33,7 +33,6 @@ func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) 
 	resp.Data.Items = make([]*content.ResourceItem, 0)
 
 	if in.TagId == 0 {
-		resp.Data = nil
 		resp.Code = int64(code.TagIdEmpty.Code())
 		resp.Msg = code.TagIdEmpty.Message()
 		return resp, nil
@@ -56,8 +55,7 @@ func (l *ResourcesByTagLogic) ResourcesByTag(in *content.ResourcesByTagRequest) 
 		trs, err = l.svcCtx.TagResourceModel.FindResourcesByTagID(l.ctx, in.TagId, in.Cursor, in.PageSize+1)
 	}
 	if err != nil {
-		resp.Data = nil
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

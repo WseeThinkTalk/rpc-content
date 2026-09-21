@@ -59,7 +59,7 @@ func (l *PublishQuestionLogic) PublishQuestion(in *content.PublishQuestionReques
 		UpdateTime: time.Now(),
 	}
 	if err := l.svcCtx.QuestionModel.Insert(l.ctx, q); err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

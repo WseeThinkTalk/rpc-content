@@ -41,7 +41,7 @@ func (l *TagsByResourceLogic) TagsByResource(in *content.TagsByResourceRequest) 
 
 	trs, err := l.svcCtx.TagResourceModel.FindTagsByBizIDAndTargetID(l.ctx, in.BizId, in.TargetId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -56,7 +56,7 @@ func (l *TagsByResourceLogic) TagsByResource(in *content.TagsByResourceRequest) 
 
 	tags, err := l.svcCtx.TagModel.FindByIds(l.ctx, tagIds)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

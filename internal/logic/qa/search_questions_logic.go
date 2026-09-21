@@ -1,6 +1,7 @@
 package qalogic
 
 import (
+	"rpc-content/pkg/code"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -48,7 +49,7 @@ func (l *SearchQuestionsLogic) SearchQuestions(in *content.SearchQuestionsReques
 		l.svcCtx.Es.Search.WithBody(strings.NewReader(query)),
 	)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -56,7 +57,7 @@ func (l *SearchQuestionsLogic) SearchQuestions(in *content.SearchQuestionsReques
 
 	var result esQuestionResult
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

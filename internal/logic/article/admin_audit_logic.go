@@ -1,6 +1,7 @@
 package articlelogic
 
 import (
+	"rpc-content/pkg/code"
 	"context"
 
 	"rpc-content/content"
@@ -35,12 +36,12 @@ func (l *AdminAuditLogic) AdminAudit(in *content.AdminAuditRequest) (resp *conte
 
 	article, err := l.svcCtx.ArticleModel.FindOne(l.ctx, in.ArticleId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
 	if article == nil {
-		resp.Code = 404
+		resp.Code = int64(code.NotFound.Code())
 		resp.Msg = "文章不存在"
 		return resp, nil
 	}
@@ -52,7 +53,7 @@ func (l *AdminAuditLogic) AdminAudit(in *content.AdminAuditRequest) (resp *conte
 
 	err = l.svcCtx.ArticleModel.UpdateArticleStatus(l.ctx, in.ArticleId, int(in.Status))
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

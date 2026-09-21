@@ -35,7 +35,7 @@ func (l *DeleteTagLogic) DeleteTag(in *content.DeleteTagRequest) (resp *content.
 
 	tag, err := l.svcCtx.TagModel.FindOne(l.ctx, in.TagId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -47,7 +47,7 @@ func (l *DeleteTagLogic) DeleteTag(in *content.DeleteTagRequest) (resp *content.
 
 	err = l.svcCtx.TagModel.Delete(l.ctx, in.TagId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

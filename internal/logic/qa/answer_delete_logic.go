@@ -40,7 +40,7 @@ func (l *AnswerDeleteLogic) AnswerDelete(in *content.AnswerDeleteRequest) (resp 
 
 	a, err := l.svcCtx.AnswerModel.FindOne(l.ctx, in.AnswerId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -56,7 +56,7 @@ func (l *AnswerDeleteLogic) AnswerDelete(in *content.AnswerDeleteRequest) (resp 
 	}
 
 	if err := l.svcCtx.AnswerModel.UpdateFields(l.ctx, in.AnswerId, map[string]interface{}{"status": 1}); err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

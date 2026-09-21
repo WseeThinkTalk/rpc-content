@@ -74,7 +74,7 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 		_ = l.svcCtx.BizRedis.ExpireCtx(l.ctx, key, 3600*24*2)
 		pairs, err := l.svcCtx.BizRedis.ZrevrangebyscoreWithScoresAndLimitCtx(l.ctx, key, 0, in.Cursor, 0, int(in.PageSize))
 		if err != nil {
-			resp.Code = 500
+			resp.Code = int64(code.ServerErr.Code())
 			resp.Msg = err.Error()
 			return resp, nil
 		}
@@ -111,7 +111,7 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 	} else {
 		articleModels, err = l.svcCtx.ArticleModel.ArticlesByUserIdWithoutCursor(l.ctx, in.UserId, -1)
 		if err != nil {
-			resp.Code = 500
+			resp.Code = int64(code.ServerErr.Code())
 			resp.Msg = err.Error()
 			return resp, nil
 		}
@@ -170,7 +170,7 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 			if errors.Is(err, model.ErrNotFound) {
 				continue
 			}
-			resp.Code = 500
+			resp.Code = int64(code.ServerErr.Code())
 			resp.Msg = err.Error()
 			return resp, nil
 		}

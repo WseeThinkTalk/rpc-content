@@ -1,6 +1,7 @@
 package articlelogic
 
 import (
+	"rpc-content/pkg/code"
 	"context"
 	"sort"
 	"strconv"
@@ -53,7 +54,7 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 			var err error
 			allModels, err = l.svcCtx.ArticleModel.ArticlesAllVisible(l.ctx, 2)
 			if err != nil {
-				resp.Code = 500
+				resp.Code = int64(code.ServerErr.Code())
 				resp.Msg = err.Error()
 				return resp, nil
 			}
@@ -71,7 +72,7 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 			if len(cachedIds) > 0 {
 				models, err := l.svcCtx.ArticleModel.FindByIds(l.ctx, cachedIds)
 				if err != nil {
-					resp.Code = 500
+					resp.Code = int64(code.ServerErr.Code())
 					resp.Msg = err.Error()
 					return resp, nil
 				}
@@ -82,7 +83,7 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 			} else {
 				models, err := l.svcCtx.ArticleModel.ArticlesAllVisible(l.ctx, 2)
 				if err != nil {
-					resp.Code = 500
+					resp.Code = int64(code.ServerErr.Code())
 					resp.Msg = err.Error()
 					return resp, nil
 				}
@@ -121,7 +122,7 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 
 		articles, err := l.svcCtx.ArticleModel.SearchArticles(l.ctx, in.Keyword, authorIds, 2, int(in.PageSize)+1, in.Cursor)
 		if err != nil {
-			resp.Code = 500
+			resp.Code = int64(code.ServerErr.Code())
 			resp.Msg = err.Error()
 			return resp, nil
 		}

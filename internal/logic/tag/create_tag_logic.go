@@ -43,7 +43,7 @@ func (l *CreateTagLogic) CreateTag(in *content.CreateTagRequest) (resp *content.
 
 	exist, err := l.svcCtx.TagModel.FindByName(l.ctx, in.TagName)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -60,7 +60,7 @@ func (l *CreateTagLogic) CreateTag(in *content.CreateTagRequest) (resp *content.
 		UpdateTime: time.Now(),
 	}
 	if err := l.svcCtx.TagModel.Insert(l.ctx, tag); err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

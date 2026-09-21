@@ -1,6 +1,7 @@
 package articlelogic
 
 import (
+	"rpc-content/pkg/code"
 	"context"
 	"time"
 
@@ -36,7 +37,7 @@ func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListReq
 
 	articles, err := l.svcCtx.ArticleModel.ArticlesPending(l.ctx, int(in.PageSize)+1, in.Cursor)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

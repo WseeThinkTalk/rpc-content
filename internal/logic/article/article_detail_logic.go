@@ -1,6 +1,7 @@
 package articlelogic
 
 import (
+	"rpc-content/pkg/code"
 	"context"
 	"errors"
 
@@ -31,19 +32,17 @@ func (l *ArticleDetailLogic) ArticleDetail(in *content.ArticleDetailRequest) (re
 
 	article, err := l.svcCtx.ArticleModel.FindOne(l.ctx, in.ArticleId)
 	if err != nil {
-		resp.Data = nil
 		if errors.Is(err, sqlx.ErrNotFound) {
-			resp.Code = 404
+			resp.Code = int64(code.NotFound.Code())
 			resp.Msg = "文章不存在"
 			return resp, nil
 		}
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
 	if article == nil {
-		resp.Data = nil
-		resp.Code = 404
+		resp.Code = int64(code.NotFound.Code())
 		resp.Msg = "文章不存在"
 		return resp, nil
 	}

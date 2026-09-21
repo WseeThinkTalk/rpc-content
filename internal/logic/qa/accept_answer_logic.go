@@ -45,7 +45,7 @@ func (l *AcceptAnswerLogic) AcceptAnswer(in *content.AcceptAnswerRequest) (resp 
 
 	q, err := l.svcCtx.QuestionModel.FindOne(l.ctx, in.QuestionId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -69,7 +69,7 @@ func (l *AcceptAnswerLogic) AcceptAnswer(in *content.AcceptAnswerRequest) (resp 
 
 	a, err := l.svcCtx.AnswerModel.FindOne(l.ctx, in.AnswerId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -80,7 +80,7 @@ func (l *AcceptAnswerLogic) AcceptAnswer(in *content.AcceptAnswerRequest) (resp 
 	}
 
 	if err := l.svcCtx.AnswerModel.UpdateFields(l.ctx, in.AnswerId, map[string]interface{}{"is_accepted": 1}); err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

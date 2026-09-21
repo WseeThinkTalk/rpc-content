@@ -41,7 +41,7 @@ func (l *AnswerListLogic) AnswerList(in *content.AnswerListRequest) (resp *conte
 
 	answers, err := l.svcCtx.AnswerModel.FindByQuestionId(l.ctx, in.QuestionId, in.Cursor, in.PageSize+1)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

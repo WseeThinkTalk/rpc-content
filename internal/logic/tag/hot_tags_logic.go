@@ -1,6 +1,7 @@
 package taglogic
 
 import (
+	"rpc-content/pkg/code"
 	"context"
 
 	"rpc-content/content"
@@ -35,7 +36,7 @@ func (l *HotTagsLogic) HotTags(in *content.HotTagsRequest) (resp *content.HotTag
 
 	tagIds, err := l.svcCtx.TagResourceModel.FindHotTagIDs(l.ctx, limit)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -45,7 +46,7 @@ func (l *HotTagsLogic) HotTags(in *content.HotTagsRequest) (resp *content.HotTag
 
 	tags, err := l.svcCtx.TagModel.FindByIds(l.ctx, tagIds)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

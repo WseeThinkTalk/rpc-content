@@ -41,12 +41,12 @@ func (l *ArticleDeleteLogic) ArticleDelete(in *content.ArticleDeleteRequest) (re
 	}
 	article, err := l.svcCtx.ArticleModel.FindOne(l.ctx, in.ArticleId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
 	if article == nil {
-		resp.Code = 404
+		resp.Code = int64(code.NotFound.Code())
 		resp.Msg = "文章不存在"
 		return resp, nil
 	}
@@ -57,7 +57,7 @@ func (l *ArticleDeleteLogic) ArticleDelete(in *content.ArticleDeleteRequest) (re
 	}
 	err = l.svcCtx.ArticleModel.UpdateArticleStatus(l.ctx, in.ArticleId, types.ArticleStatusUserDelete)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

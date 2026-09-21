@@ -48,7 +48,7 @@ func (l *AnswerQuestionLogic) AnswerQuestion(in *content.AnswerQuestionRequest) 
 
 	q, err := l.svcCtx.QuestionModel.FindOne(l.ctx, in.QuestionId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -67,7 +67,7 @@ func (l *AnswerQuestionLogic) AnswerQuestion(in *content.AnswerQuestionRequest) 
 		UpdateTime: time.Now(),
 	}
 	if err := l.svcCtx.AnswerModel.Insert(l.ctx, ans); err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

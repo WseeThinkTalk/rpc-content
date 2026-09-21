@@ -40,7 +40,7 @@ func (l *QuestionDeleteLogic) QuestionDelete(in *content.QuestionDeleteRequest) 
 
 	q, err := l.svcCtx.QuestionModel.FindOne(l.ctx, in.QuestionId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -56,7 +56,7 @@ func (l *QuestionDeleteLogic) QuestionDelete(in *content.QuestionDeleteRequest) 
 	}
 
 	if err := l.svcCtx.QuestionModel.UpdateFields(l.ctx, in.QuestionId, map[string]interface{}{"status": 1}); err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

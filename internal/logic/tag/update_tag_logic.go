@@ -45,7 +45,7 @@ func (l *UpdateTagLogic) UpdateTag(in *content.UpdateTagRequest) (resp *content.
 
 	tag, err := l.svcCtx.TagModel.FindOne(l.ctx, in.TagId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -58,7 +58,7 @@ func (l *UpdateTagLogic) UpdateTag(in *content.UpdateTagRequest) (resp *content.
 	if in.TagName != tag.TagName {
 		exist, err := l.svcCtx.TagModel.FindByName(l.ctx, in.TagName)
 		if err != nil {
-			resp.Code = 500
+			resp.Code = int64(code.ServerErr.Code())
 			resp.Msg = err.Error()
 			return resp, nil
 		}
@@ -74,7 +74,7 @@ func (l *UpdateTagLogic) UpdateTag(in *content.UpdateTagRequest) (resp *content.
 		"tag_desc": in.TagDesc,
 	})
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

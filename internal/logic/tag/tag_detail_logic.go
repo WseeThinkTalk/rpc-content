@@ -29,7 +29,6 @@ func (l *TagDetailLogic) TagDetail(in *content.TagDetailRequest) (resp *content.
 	resp.Data = new(content.TagItem)
 
 	if in.TagId == 0 {
-		resp.Data = nil
 		resp.Code = int64(code.TagIdEmpty.Code())
 		resp.Msg = code.TagIdEmpty.Message()
 		return resp, nil
@@ -37,13 +36,11 @@ func (l *TagDetailLogic) TagDetail(in *content.TagDetailRequest) (resp *content.
 
 	tag, err := l.svcCtx.TagModel.FindOne(l.ctx, in.TagId)
 	if err != nil {
-		resp.Data = nil
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
 	if tag == nil {
-		resp.Data = nil
 		resp.Code = int64(code.TagNotFound.Code())
 		resp.Msg = code.TagNotFound.Message()
 		return resp, nil
@@ -51,8 +48,7 @@ func (l *TagDetailLogic) TagDetail(in *content.TagDetailRequest) (resp *content.
 
 	resourceCount, err := l.svcCtx.TagResourceModel.CountByTagID(l.ctx, in.TagId)
 	if err != nil {
-		resp.Data = nil
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

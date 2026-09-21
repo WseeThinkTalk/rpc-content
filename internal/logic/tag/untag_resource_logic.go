@@ -45,7 +45,7 @@ func (l *UntagResourceLogic) UntagResource(in *content.UntagResourceRequest) (re
 
 	exist, err := l.svcCtx.TagResourceModel.FindByTagIDAndBizIDAndTargetID(l.ctx, in.TagId, in.BizId, in.TargetId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -55,7 +55,7 @@ func (l *UntagResourceLogic) UntagResource(in *content.UntagResourceRequest) (re
 
 	err = l.svcCtx.TagResourceModel.Delete(l.ctx, exist.ID)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

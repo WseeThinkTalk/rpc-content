@@ -16,6 +16,7 @@ import (
 	model "rpc-content/internal/model/article"
 	"rpc-content/internal/svc"
 	"rpc-content/pkg/breaker"
+	"rpc-content/pkg/cacheguard"
 	"rpc-content/pkg/code"
 	"rpc-content/pkg/esquery"
 
@@ -384,44 +385,103 @@ func (l *SearchArticlesLogic) searchTwoPhase(in *content.SearchRequest, authorId
 	return articles, isEnd, nextCursor, true
 }
 
-// hydrateArticles 批量从缓存拉取文章详情，缺失回源单次查询并异步回填
+// hydrateArticles 批量从缓存拉取文章详情（MGet单次RTT），缺失ID通过 SingleFlight 回源防击穿，并设空值防穿透
 func (l *SearchArticlesLogic) hydrateArticles(ids []int64) []*model.Article {
 	if len(ids) == 0 {
 		return nil
 	}
 
-	resultMap := make(map[int64]*model.Article)
+	resultMap := make(map[int64]*model.Article, len(ids))
 	var missingIds []int64
 
-	for _, id := range ids {
-		key := fmt.Sprintf("biz#article#detail:%d", id)
-		if l.svcCtx.BizRedis != nil {
-			val, err := l.svcCtx.BizRedis.GetCtx(l.ctx, key)
-			if err == nil && val != "" {
-				var art model.Article
-				if json.Unmarshal([]byte(val), &art) == nil {
-					resultMap[id] = &art
+	keys := make([]string, len(ids))
+	for i, id := range ids {
+		keys[i] = fmt.Sprintf("biz#article#detail:%d", id)
+	}
+
+	// 1. 批量单次 RTT MGet 详情缓存
+	if l.svcCtx.BizRedis != nil {
+		vals, err := l.svcCtx.BizRedis.MgetCtx(l.ctx, keys...)
+		if err == nil && len(vals) == len(ids) {
+			for i, val := range vals {
+				id := ids[i]
+				if val == "" {
+					missingIds = append(missingIds, id)
 					continue
 				}
+
+				var art model.Article
+				if err := json.Unmarshal([]byte(val), &art); err != nil {
+					missingIds = append(missingIds, id)
+					continue
+				}
+
+				// 防穿透空对象检查：若为 -1 哨兵，说明数据库中确无此记录，跳过回源
+				if cacheguard.IsNullArticle(art.Id) {
+					continue
+				}
+
+				resultMap[id] = &art
 			}
+		} else {
+			// Redis 异常或长度不匹配时全量标记缺失
+			missingIds = append(missingIds, ids...)
 		}
-		missingIds = append(missingIds, id)
+	} else {
+		missingIds = append(missingIds, ids...)
 	}
 
+	// 2. 对未命中的 missingIds 执行 SingleFlight 保护回源，阻断突发热搜并发击穿 MySQL
 	if len(missingIds) > 0 {
-		dbArticles, err := l.svcCtx.ArticleModel.FindByIds(l.ctx, missingIds)
-		if err == nil {
+		sortedMissing := make([]int64, len(missingIds))
+		copy(sortedMissing, missingIds)
+		sort.Slice(sortedMissing, func(i, j int) bool { return sortedMissing[i] < sortedMissing[j] })
+
+		var sb strings.Builder
+		for i, mid := range sortedMissing {
+			if i > 0 {
+				sb.WriteByte(',')
+			}
+			sb.WriteString(strconv.FormatInt(mid, 10))
+		}
+		sfKey := fmt.Sprintf("sf:hydrate:%s", sb.String())
+
+		val, err, _ := l.svcCtx.SingleFlightGroup.Do(sfKey, func() (interface{}, error) {
+			dbArticles, err := l.svcCtx.ArticleModel.FindByIds(l.ctx, sortedMissing)
+			if err != nil {
+				return nil, err
+			}
+
+			foundMap := make(map[int64]*model.Article, len(dbArticles))
 			for _, art := range dbArticles {
-				resultMap[art.Id] = art
+				foundMap[art.Id] = art
 				if l.svcCtx.BizRedis != nil {
 					data, _ := json.Marshal(art)
-					_ = l.svcCtx.BizRedis.SetexCtx(l.ctx, fmt.Sprintf("biz#article#detail:%d", art.Id), string(data), 7200)
+					_ = l.svcCtx.BizRedis.SetexCtx(l.ctx, fmt.Sprintf("biz#article#detail:%d", art.Id), string(data), cacheguard.NormalArticleTTL)
+				}
+			}
+
+			// 对在 MySQL 中不存在的 ID 回填 Null Object 空值防穿透（60s 短 TTL）
+			for _, mid := range sortedMissing {
+				if _, ok := foundMap[mid]; !ok {
+					if l.svcCtx.BizRedis != nil {
+						_ = l.svcCtx.BizRedis.SetexCtx(l.ctx, fmt.Sprintf("biz#article#detail:%d", mid), cacheguard.BuildNullArticlePayload(), cacheguard.NullArticleTTL)
+					}
+				}
+			}
+			return foundMap, nil
+		})
+
+		if err == nil && val != nil {
+			if foundMap, ok := val.(map[int64]*model.Article); ok {
+				for id, art := range foundMap {
+					resultMap[id] = art
 				}
 			}
 		}
 	}
 
-	// 保持原召回顺序
+	// 3. 严格保持原召回顺序
 	ordered := make([]*model.Article, 0, len(ids))
 	for _, id := range ids {
 		if art, ok := resultMap[id]; ok {

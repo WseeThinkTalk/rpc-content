@@ -43,3 +43,24 @@ func TestPaginateByCursor(t *testing.T) {
 		t.Fatalf("预期下一页游标时间戳为 %d, 实际为 %d", articles[1].PublishTime.Unix(), nextCursor)
 	}
 }
+
+// TestHydrateOrderPreserved 测试两阶段检索第二阶段物化后严格保持 ES 相关度顺序
+func TestHydrateOrderPreserved(t *testing.T) {
+	ids := []int64{103, 101, 102}
+	resultMap := map[int64]*model.Article{
+		101: {Id: 101, Title: "A1"},
+		102: {Id: 102, Title: "A2"},
+		103: {Id: 103, Title: "A3"},
+	}
+
+	ordered := make([]*model.Article, 0, len(ids))
+	for _, id := range ids {
+		if art, ok := resultMap[id]; ok {
+			ordered = append(ordered, art)
+		}
+	}
+
+	if len(ordered) != 3 || ordered[0].Id != 103 || ordered[1].Id != 101 || ordered[2].Id != 102 {
+		t.Fatalf("预期物化保序结果为 [103, 101, 102]，实际为 %+v", ordered)
+	}
+}

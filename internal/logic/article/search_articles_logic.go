@@ -1,10 +1,13 @@
 package articlelogic
 
 import (
-	"rpc-content/pkg/code"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,6 +15,8 @@ import (
 	"rpc-content/content"
 	model "rpc-content/internal/model/article"
 	"rpc-content/internal/svc"
+	"rpc-content/pkg/code"
+	"rpc-content/pkg/esquery"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -114,28 +119,38 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 			}
 		}
 
-		articles, err := l.svcCtx.ArticleModel.SearchArticles(l.ctx, in.Keyword, authorIds, 2, int(in.PageSize)+1, in.Cursor)
-		if err != nil {
-			resp.Code = int64(code.ServerErr.Code())
-			resp.Msg = err.Error()
-			return resp, nil
+		var (
+			articles   []*model.Article
+			esSearchOK bool
+		)
+		if l.svcCtx.Es != nil {
+			articles, isEnd, cursor, esSearchOK = l.searchTwoPhase(in, authorIds)
 		}
 
-		if len(articles) > int(in.PageSize) {
-			articles = articles[:in.PageSize]
-		} else {
-			isEnd = true
+		// ES 未配置或发生异常时，平滑降级至数据库模糊查询
+		if !esSearchOK {
+			dbArticles, err := l.svcCtx.ArticleModel.SearchArticles(l.ctx, in.Keyword, authorIds, 2, int(in.PageSize)+1, in.Cursor)
+			if err != nil {
+				resp.Code = int64(code.ServerErr.Code())
+				resp.Msg = err.Error()
+				return resp, nil
+			}
+
+			if len(dbArticles) > int(in.PageSize) {
+				articles = dbArticles[:in.PageSize]
+				isEnd = false
+			} else {
+				articles = dbArticles
+				isEnd = true
+			}
+
+			if len(articles) > 0 && !isEnd {
+				last := articles[len(articles)-1]
+				cursor = last.PublishTime.Unix()
+			}
 		}
 
 		items = articlesToItems(articles)
-
-		if len(items) > 0 && !isEnd {
-			last := items[len(items)-1]
-			t, err := time.ParseInLocation("2006-01-02 15:04:05", last.PublishTime, time.Local)
-			if err == nil {
-				cursor = t.Unix()
-			}
-		}
 	}
 
 	if l.svcCtx.UserRPC != nil {
@@ -294,4 +309,118 @@ func (l *SearchArticlesLogic) addCacheAllArticles(ctx context.Context, articles 
 	}
 	_ = l.svcCtx.BizRedis.ExpireCtx(ctx, key, 3600*24*2)
 	return nil
+}
+
+// searchTwoPhase 第一阶段：ES 仅检索 ID；第二阶段：Redis MGet 详情物化
+func (l *SearchArticlesLogic) searchTwoPhase(in *content.SearchRequest, authorIds []int64) ([]*model.Article, bool, int64, bool) {
+	from := 0
+	limit := int(in.PageSize) + 1
+
+	params := esquery.SearchParams{
+		Keyword:   in.Keyword,
+		AuthorIds: authorIds,
+		Status:    2,
+		From:      from,
+		Size:      limit,
+	}
+
+	dsl, err := esquery.BuildArticleSearchIDOnlyDSL(params)
+	if err != nil {
+		l.Errorf("[searchTwoPhase] build dsl error: %v", err)
+		return nil, false, 0, false
+	}
+
+	// 利用 SingleFlightGroup 阻断并发热搜击穿
+	sfKey := fmt.Sprintf("sf:search:%s:%d:%d", in.Keyword, from, limit)
+	val, err, _ := l.svcCtx.SingleFlightGroup.Do(sfKey, func() (interface{}, error) {
+		res, err := l.svcCtx.Es.Search(
+			l.svcCtx.Es.Search.WithContext(l.ctx),
+			l.svcCtx.Es.Search.WithIndex("thinktalk_article"),
+			l.svcCtx.Es.Search.WithBody(strings.NewReader(dsl)),
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer res.Body.Close()
+		if res.IsError() {
+			return nil, fmt.Errorf("es search status error: %s", res.Status())
+		}
+		bodyBytes, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, err
+		}
+		ids, _, err := esquery.ParseSearchIDs(bodyBytes)
+		return ids, err
+	})
+	if err != nil {
+		l.Errorf("[searchTwoPhase] es execute error: %v", err)
+		return nil, false, 0, false
+	}
+
+	ids, ok := val.([]int64)
+	if !ok || len(ids) == 0 {
+		return []*model.Article{}, true, 0, true
+	}
+
+	isEnd := true
+	if len(ids) > int(in.PageSize) {
+		ids = ids[:in.PageSize]
+		isEnd = false
+	}
+
+	// 第二阶段：批量拉取缓存与回填
+	articles := l.hydrateArticles(ids)
+	var nextCursor int64
+	if len(articles) > 0 {
+		nextCursor = articles[len(articles)-1].PublishTime.Unix()
+	}
+
+	return articles, isEnd, nextCursor, true
+}
+
+// hydrateArticles 批量从缓存拉取文章详情，缺失回源单次查询并异步回填
+func (l *SearchArticlesLogic) hydrateArticles(ids []int64) []*model.Article {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	resultMap := make(map[int64]*model.Article)
+	var missingIds []int64
+
+	for _, id := range ids {
+		key := fmt.Sprintf("biz#article#detail:%d", id)
+		if l.svcCtx.BizRedis != nil {
+			val, err := l.svcCtx.BizRedis.GetCtx(l.ctx, key)
+			if err == nil && val != "" {
+				var art model.Article
+				if json.Unmarshal([]byte(val), &art) == nil {
+					resultMap[id] = &art
+					continue
+				}
+			}
+		}
+		missingIds = append(missingIds, id)
+	}
+
+	if len(missingIds) > 0 {
+		dbArticles, err := l.svcCtx.ArticleModel.FindByIds(l.ctx, missingIds)
+		if err == nil {
+			for _, art := range dbArticles {
+				resultMap[art.Id] = art
+				if l.svcCtx.BizRedis != nil {
+					data, _ := json.Marshal(art)
+					_ = l.svcCtx.BizRedis.SetexCtx(l.ctx, fmt.Sprintf("biz#article#detail:%d", art.Id), string(data), 7200)
+				}
+			}
+		}
+	}
+
+	// 保持原召回顺序
+	ordered := make([]*model.Article, 0, len(ids))
+	for _, id := range ids {
+		if art, ok := resultMap[id]; ok {
+			ordered = append(ordered, art)
+		}
+	}
+	return ordered
 }

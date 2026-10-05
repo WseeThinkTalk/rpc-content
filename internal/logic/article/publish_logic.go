@@ -12,6 +12,7 @@ import (
 	types "rpc-content/internal/types/article"
 	"rpc-content/pkg/code"
 	"rpc-content/pkg/sensitive"
+	"rpc-content/pkg/snowflake"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -79,7 +80,11 @@ func (l *PublishLogic) Publish(in *content.PublishRequest) (resp *content.Publis
 		return resp, nil
 	}
 
-	ret, err := l.svcCtx.ArticleModel.Insert(l.ctx, &model.Article{
+	// 预分配分布式唯一文章ID
+	articleId := snowflake.GenerateID()
+
+	_, err = l.svcCtx.ArticleModel.Insert(l.ctx, &model.Article{
+		Id:          articleId,
 		AuthorId:    in.UserId,
 		Title:       in.Title,
 		Content:     in.Content,
@@ -90,13 +95,6 @@ func (l *PublishLogic) Publish(in *content.PublishRequest) (resp *content.Publis
 		CreateTime:  time.Now(),
 		UpdateTime:  time.Now(),
 	})
-	if err != nil {
-		resp.Code = int64(code.ServerErr.Code())
-		resp.Msg = err.Error()
-		return resp, nil
-	}
-
-	articleId, err := ret.LastInsertId()
 	if err != nil {
 		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()

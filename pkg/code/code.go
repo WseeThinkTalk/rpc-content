@@ -16,7 +16,8 @@ var (
 	ArticleIdInvalid        = xcode.New(60005, "文章ID无效")
 	ArticleTitleTooLong     = xcode.New(60006, "文章标题过长")
 	ArticleContentTooLong   = xcode.New(60007, "文章内容过长")
-	ArticleDescTooLong      = xcode.New(60008, "文章描述过长")
+	ArticleDescTooLong           = xcode.New(60008, "文章描述过长")
+	ContentContainsSensitiveWord = xcode.New(60009, "内容包含违规敏感词汇")
 
 	// QA (90000+)
 	QAUserIdInvalid  = xcode.New(90001, "用户ID无效")

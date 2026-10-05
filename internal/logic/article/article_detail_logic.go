@@ -26,10 +26,12 @@ func NewArticleDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Art
 	}
 }
 
+// ArticleDetail 获取文章详情
 func (l *ArticleDetailLogic) ArticleDetail(in *content.ArticleDetailRequest) (resp *content.ArticleDetailResponse, err error) {
 	resp = new(content.ArticleDetailResponse)
 	resp.Data = new(content.ArticleItem)
 
+	// 查询文章信息
 	article, err := l.svcCtx.ArticleModel.FindOne(l.ctx, in.ArticleId)
 	if err != nil {
 		if errors.Is(err, sqlx.ErrNotFound) {
@@ -47,6 +49,7 @@ func (l *ArticleDetailLogic) ArticleDetail(in *content.ArticleDetailRequest) (re
 		return resp, nil
 	}
 
+	// 组装返回结果
 	resp.Data.Id = article.Id
 	resp.Data.Title = article.Title
 	resp.Data.Content = article.Content

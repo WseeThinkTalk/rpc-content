@@ -24,6 +24,7 @@ type (
 		SearchArticles(ctx context.Context, keyword string, authorIds []int64, status int, limit int, cursor int64) ([]*Article, error)
 		ArticlesPending(ctx context.Context, limit int, cursor int64) ([]*Article, error)
 		FindByIds(ctx context.Context, ids []int64) ([]*Article, error)
+		ArticlesByCursor(ctx context.Context, status int, cursorTime time.Time, limit int) ([]*Article, error)
 	}
 
 	customArticleModel struct {
@@ -118,10 +119,12 @@ func (m *customArticleModel) ArticlesByUserId(ctx context.Context, userId int64,
 	return articles, nil
 }
 
+// UpdateArticleStatus 更新文章状态
 func (m *customArticleModel) UpdateArticleStatus(ctx context.Context, id int64, status int) error {
 	return m.db.WithContext(ctx).Model(&Article{}).Where("id = ?", id).Update("status", status).Error
 }
 
+// ArticlesByUserIdWithoutCursor 查询用户指定状态文章列表
 func (m *customArticleModel) ArticlesByUserIdWithoutCursor(ctx context.Context, userId int64, status int) ([]*Article, error) {
 	var articles []*Article
 	var err error
@@ -136,6 +139,7 @@ func (m *customArticleModel) ArticlesByUserIdWithoutCursor(ctx context.Context, 
 	return articles, nil
 }
 
+// ArticlesAllVisible 查询所有可见文章
 func (m *customArticleModel) ArticlesAllVisible(ctx context.Context, status int) ([]*Article, error) {
 	var articles []*Article
 	err := m.db.WithContext(ctx).Where("status = ?", status).Order("publish_time desc").Find(&articles).Error
@@ -145,6 +149,7 @@ func (m *customArticleModel) ArticlesAllVisible(ctx context.Context, status int)
 	return articles, nil
 }
 
+// SearchArticles 按关键词和作者ID搜索文章
 func (m *customArticleModel) SearchArticles(ctx context.Context, keyword string, authorIds []int64, status int, limit int, cursor int64) ([]*Article, error) {
 	var articles []*Article
 	query := m.db.WithContext(ctx).Where("status = ?", status)
@@ -163,6 +168,7 @@ func (m *customArticleModel) SearchArticles(ctx context.Context, keyword string,
 	return articles, err
 }
 
+// FindByIds 批量根据ID查询文章
 func (m *customArticleModel) FindByIds(ctx context.Context, ids []int64) ([]*Article, error) {
 	if len(ids) == 0 {
 		return nil, nil
@@ -175,6 +181,7 @@ func (m *customArticleModel) FindByIds(ctx context.Context, ids []int64) ([]*Art
 	return articles, nil
 }
 
+// ArticlesPending 分页查询待审核文章
 func (m *customArticleModel) ArticlesPending(ctx context.Context, limit int, cursor int64) ([]*Article, error) {
 	var articles []*Article
 	query := m.db.WithContext(ctx).Where("status = 0")
@@ -184,3 +191,17 @@ func (m *customArticleModel) ArticlesPending(ctx context.Context, limit int, cur
 	err := query.Order("publish_time desc").Limit(limit).Find(&articles).Error
 	return articles, err
 }
+
+// ArticlesByCursor 基于发布时间游标分页拉取指定状态文章
+func (m *customArticleModel) ArticlesByCursor(ctx context.Context, status int, cursorTime time.Time, limit int) ([]*Article, error) {
+	var articles []*Article
+	query := m.db.WithContext(ctx).Where("status = ?", status)
+	if !cursorTime.IsZero() {
+		// 过滤早于游标的数据
+		query = query.Where("publish_time < ?", cursorTime)
+	}
+	// 按发布时间倒序排序
+	err := query.Order("publish_time desc, id desc").Limit(limit).Find(&articles).Error
+	return articles, err
+}
+

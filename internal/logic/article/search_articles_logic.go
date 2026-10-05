@@ -14,7 +14,6 @@ import (
 	"rpc-content/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/threading"
 )
 
 type SearchArticlesLogic struct {
@@ -47,12 +46,9 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 	)
 
 	if in.Keyword == "" {
-		var allModels []*model.Article
-
 		if in.SortType == 1 {
-			// 按点赞排序
-			var err error
-			allModels, err = l.svcCtx.ArticleModel.ArticlesAllVisible(l.ctx, 2)
+			// 按点赞数排序（取前200条热榜）
+			allModels, err := l.svcCtx.ArticleModel.ArticlesByCursor(l.ctx, 2, time.Time{}, 200)
 			if err != nil {
 				resp.Code = int64(code.ServerErr.Code())
 				resp.Msg = err.Error()
@@ -64,48 +60,45 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 				}
 				return allModels[i].LikeNum > allModels[j].LikeNum
 			})
-		} else {
-			// 时间排序 — 尝试 Redis 缓存
-			key := "biz#articles#global"
-			cachedIds := getCachedArticleIds(l.ctx, l.svcCtx, key)
-
-			if len(cachedIds) > 0 {
-				models, err := l.svcCtx.ArticleModel.FindByIds(l.ctx, cachedIds)
-				if err != nil {
-					resp.Code = int64(code.ServerErr.Code())
-					resp.Msg = err.Error()
-					return resp, nil
-				}
-				sort.SliceStable(models, func(i, j int) bool {
-					return models[i].PublishTime.After(models[j].PublishTime)
-				})
-				allModels = models
-			} else {
-				models, err := l.svcCtx.ArticleModel.ArticlesAllVisible(l.ctx, 2)
-				if err != nil {
-					resp.Code = int64(code.ServerErr.Code())
-					resp.Msg = err.Error()
-					return resp, nil
-				}
-				allModels = models
-
-				threading.GoSafe(func() {
-					_ = l.addCacheAllArticles(context.Background(), models)
-				})
+			if len(allModels) == 0 {
+				resp.Data.IsEnd = true
+				return resp, nil
 			}
-		}
+			if in.Cursor == 0 {
+				in.Cursor = time.Now().Unix()
+			}
+			var page []*model.Article
+			page, isEnd, cursor = paginateByTime(allModels, in.Cursor, int(in.PageSize))
+			items = articlesToItems(page)
+		} else {
+			// 按发布时间游标分页
+			var cursorTime time.Time
+			if in.Cursor > 0 {
+				cursorTime = time.Unix(in.Cursor, 0)
+			}
+			// 多查1条用于判断是否有下一页
+			limit := int(in.PageSize) + 1
+			models, err := l.svcCtx.ArticleModel.ArticlesByCursor(l.ctx, 2, cursorTime, limit)
+			if err != nil {
+				resp.Code = int64(code.ServerErr.Code())
+				resp.Msg = err.Error()
+				return resp, nil
+			}
 
-		if len(allModels) == 0 {
-			resp.Data.IsEnd = true
-			return resp, nil
+			// 截取当前页数据并更新下一页游标
+			if len(models) > int(in.PageSize) {
+				models = models[:in.PageSize]
+				isEnd = false
+				cursor = models[len(models)-1].PublishTime.Unix()
+			} else {
+				// 到达最后一页
+				isEnd = true
+				if len(models) > 0 {
+					cursor = models[len(models)-1].PublishTime.Unix()
+				}
+			}
+			items = articlesToItems(models)
 		}
-
-		if in.Cursor == 0 {
-			in.Cursor = time.Now().Unix()
-		}
-		var page []*model.Article
-		page, isEnd, cursor = paginateByTime(allModels, in.Cursor, int(in.PageSize))
-		items = articlesToItems(page)
 	} else {
 		var authorIds []int64
 		if in.Keyword != "" && l.svcCtx.UserRPC != nil {

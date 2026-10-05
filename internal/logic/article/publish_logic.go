@@ -11,6 +11,7 @@ import (
 	"rpc-content/internal/svc"
 	types "rpc-content/internal/types/article"
 	"rpc-content/pkg/code"
+	"rpc-content/pkg/sensitive"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -67,6 +68,14 @@ func (l *PublishLogic) Publish(in *content.PublishRequest) (resp *content.Publis
 	if len(in.Description) > maxDescriptionLength {
 		resp.Code = int64(code.ArticleDescTooLong.Code())
 		resp.Msg = code.ArticleDescTooLong.Message()
+		return resp, nil
+	}
+
+	// 敏感词检查
+	defaultFilter := sensitive.NewFilter([]string{"涉黄", "涉暴", "赌博", "违禁"})
+	if defaultFilter.IsSensitive(in.Title) || defaultFilter.IsSensitive(in.Description) || defaultFilter.IsSensitive(in.Content) {
+		resp.Code = int64(code.ContentContainsSensitiveWord.Code())
+		resp.Msg = code.ContentContainsSensitiveWord.Message()
 		return resp, nil
 	}
 

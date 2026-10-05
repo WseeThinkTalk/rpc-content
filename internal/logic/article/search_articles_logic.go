@@ -15,6 +15,7 @@ import (
 	"rpc-content/content"
 	model "rpc-content/internal/model/article"
 	"rpc-content/internal/svc"
+	"rpc-content/pkg/breaker"
 	"rpc-content/pkg/code"
 	"rpc-content/pkg/esquery"
 
@@ -330,27 +331,32 @@ func (l *SearchArticlesLogic) searchTwoPhase(in *content.SearchRequest, authorId
 		return nil, false, 0, false
 	}
 
-	// 利用 SingleFlightGroup 阻断并发热搜击穿
+	// 利用 SingleFlightGroup 阻断并发热搜击穿，并使用 Breaker 弹性熔断防护
 	sfKey := fmt.Sprintf("sf:search:%s:%d:%d", in.Keyword, from, limit)
 	val, err, _ := l.svcCtx.SingleFlightGroup.Do(sfKey, func() (interface{}, error) {
-		res, err := l.svcCtx.Es.Search(
-			l.svcCtx.Es.Search.WithContext(l.ctx),
-			l.svcCtx.Es.Search.WithIndex("thinktalk_article"),
-			l.svcCtx.Es.Search.WithBody(strings.NewReader(dsl)),
-		)
-		if err != nil {
+		return breaker.ExecuteWithFallback(l.ctx, "es:search_articles", func() ([]int64, error) {
+			res, err := l.svcCtx.Es.Search(
+				l.svcCtx.Es.Search.WithContext(l.ctx),
+				l.svcCtx.Es.Search.WithIndex("thinktalk_article"),
+				l.svcCtx.Es.Search.WithBody(strings.NewReader(dsl)),
+			)
+			if err != nil {
+				return nil, err
+			}
+			defer res.Body.Close()
+			if res.IsError() {
+				return nil, fmt.Errorf("es search status error: %s", res.Status())
+			}
+			bodyBytes, err := io.ReadAll(res.Body)
+			if err != nil {
+				return nil, err
+			}
+			ids, _, err := esquery.ParseSearchIDs(bodyBytes)
+			return ids, err
+		}, func(err error) ([]int64, error) {
+			l.Errorf("[searchTwoPhase] ES breaker triggered fallback: %v", err)
 			return nil, err
-		}
-		defer res.Body.Close()
-		if res.IsError() {
-			return nil, fmt.Errorf("es search status error: %s", res.Status())
-		}
-		bodyBytes, err := io.ReadAll(res.Body)
-		if err != nil {
-			return nil, err
-		}
-		ids, _, err := esquery.ParseSearchIDs(bodyBytes)
-		return ids, err
+		})
 	})
 	if err != nil {
 		l.Errorf("[searchTwoPhase] es execute error: %v", err)

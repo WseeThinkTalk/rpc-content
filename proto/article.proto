@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package pb;
-option go_package="./pb";
+package content;
+option go_package = "api-thinktalk/client/article/pb;pb";
 
 service Article {
   rpc Publish(PublishRequest) returns (PublishResponse);
@@ -22,8 +22,14 @@ message PublishRequest {
   repeated int64 tagIds = 6;
 }
 
-message PublishResponse {
+message PublishData {
   int64 articleId = 1;
+}
+
+message PublishResponse {
+  int64 code = 1;
+  string msg = 2;
+  PublishData data = 3;
 }
 
 message ArticlesRequest {
@@ -35,7 +41,7 @@ message ArticlesRequest {
 }
 
 message ArticleItem {
-  int64 Id = 1;
+  int64 id = 1;
   string title = 2;
   string content = 3;
   string description = 4;
@@ -47,11 +53,17 @@ message ArticleItem {
   int64 status = 10;
 }
 
-message ArticlesResponse {
+message ArticlesData {
   repeated ArticleItem articles = 1;
   bool isEnd = 2;
   int64 cursor = 3;
   int64 articleId = 4;
+}
+
+message ArticlesResponse {
+  int64 code = 1;
+  string msg = 2;
+  ArticlesData data = 3;
 }
 
 message ArticleDeleteRequest {
@@ -60,6 +72,8 @@ message ArticleDeleteRequest {
 }
 
 message ArticleDeleteResponse {
+  int64 code = 1;
+  string msg = 2;
 }
 
 message ArticleDetailRequest {
@@ -67,13 +81,15 @@ message ArticleDetailRequest {
 }
 
 message ArticleDetailResponse {
-  ArticleItem article = 1;
+  int64 code = 1;
+  string msg = 2;
+  ArticleItem data = 3;
 }
 
 message SearchRequest {
-  string keyword = 1;  // 搜索关键词
-  int64 cursor = 2;    // 游标
-  int64 pageSize = 3;  // 页大小
+  string keyword = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
   int32 sortType = 4;
 }
 
@@ -90,10 +106,16 @@ message SearchItem {
   string authorAvatar = 10;
 }
 
-message SearchResponse {
+message SearchData {
   repeated SearchItem items = 1;
   int64 cursor = 2;
   bool isEnd = 3;
+}
+
+message SearchResponse {
+  int64 code = 1;
+  string msg = 2;
+  SearchData data = 3;
 }
 
 message AdminPendingListRequest {
@@ -102,15 +124,17 @@ message AdminPendingListRequest {
 }
 
 message AdminPendingListResponse {
-  repeated SearchItem items = 1;
-  int64 cursor = 2;
-  bool isEnd = 3;
+  int64 code = 1;
+  string msg = 2;
+  SearchData data = 3;
 }
 
 message AdminAuditRequest {
   int64 articleId = 1;
-  int32 status = 2; // 2: approve, 1: reject
+  int32 status = 2;
 }
 
 message AdminAuditResponse {
+  int64 code = 1;
+  string msg = 2;
 }

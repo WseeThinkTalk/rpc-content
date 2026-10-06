@@ -70,19 +70,6 @@ func registerServer(ctx *svc.ServiceContext, grpcServer grpc.ServiceRegistrar) {
 	content.RegisterArticleServer(grpcServer, artSrv)
 	content.RegisterQAServer(grpcServer, qaSrv)
 	content.RegisterTagServer(grpcServer, tagSrv)
-
-	// 兼容旧版客户端 (api-thinktalk) 调用的服务命名空间
-	artDesc := content.Article_ServiceDesc
-	artDesc.ServiceName = "pb.Article"
-	grpcServer.RegisterService(&artDesc, artSrv)
-
-	qaDesc := content.QA_ServiceDesc
-	qaDesc.ServiceName = "service.QA"
-	grpcServer.RegisterService(&qaDesc, qaSrv)
-
-	tagDesc := content.Tag_ServiceDesc
-	tagDesc.ServiceName = "service.Tag"
-	grpcServer.RegisterService(&tagDesc, tagSrv)
 }
 
 // unaryServerInterceptor grpc 拦截器

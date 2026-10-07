@@ -30,24 +30,14 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	dsn := c.DB.DataSource
-	if dsn == "" {
-		dsn = c.DataSource
-	}
-
 	db := orm.MustNewPostgres(&orm.Config{
-		DSN:          dsn,
+		DSN:          c.DB.DataSource,
 		MaxOpenConns: c.DB.MaxOpenConns,
 		MaxIdleConns: c.DB.MaxIdleConns,
 		MaxLifetime:  c.DB.MaxLifetime,
 	})
 
-	rds := redis.MustNewRedis(redis.RedisConf{
-		Host:        c.BizRedis.Host,
-		Pass:        c.BizRedis.Pass,
-		Type:        c.BizRedis.Type,
-		PingTimeout: 10000000000,
-	})
+	rds := redis.MustNewRedis(c.BizRedis)
 
 	artModel := articlemodel.NewArticleModel(db.DB)
 

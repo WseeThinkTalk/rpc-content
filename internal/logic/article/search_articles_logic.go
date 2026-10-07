@@ -431,7 +431,7 @@ func (l *SearchArticlesLogic) hydrateArticles(ids []int64) []*model.Article {
 		missingIds = append(missingIds, ids...)
 	}
 
-	// 2. 对未命中的 missingIds 执行 SingleFlight 保护回源，阻断突发热搜并发击穿 MySQL
+	// 2. 对未命中的 missingIds 执行 SingleFlight 保护回源，阻断突发热搜并发击穿数据库
 	if len(missingIds) > 0 {
 		sortedMissing := make([]int64, len(missingIds))
 		copy(sortedMissing, missingIds)
@@ -461,7 +461,7 @@ func (l *SearchArticlesLogic) hydrateArticles(ids []int64) []*model.Article {
 				}
 			}
 
-			// 对在 MySQL 中不存在的 ID 回填 Null Object 空值防穿透（60s 短 TTL）
+			// 对在数据库中不存在的 ID 回填 Null Object 空值防穿透（60s 短 TTL）
 			for _, mid := range sortedMissing {
 				if _, ok := foundMap[mid]; !ok {
 					if l.svcCtx.BizRedis != nil {

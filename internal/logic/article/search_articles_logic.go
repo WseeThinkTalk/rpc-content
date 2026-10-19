@@ -162,31 +162,6 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 	return resp, nil
 }
 
-func getCachedArticleIds(ctx context.Context, svcCtx *svc.ServiceContext, key string) []int64 {
-	exists, err := svcCtx.BizRedis.ExistsCtx(ctx, key)
-	if err != nil || !exists {
-		return nil
-	}
-	_ = svcCtx.BizRedis.ExpireCtx(ctx, key, 3600*24*2)
-
-	pairs, err := svcCtx.BizRedis.ZrevrangebyscoreWithScoresAndLimitCtx(
-		ctx, key, 0, time.Now().Unix()+86400, 0, 10000)
-	if err != nil {
-		return nil
-	}
-
-	// 解析缓存中的文章ID
-	ids := make([]int64, 0, len(pairs))
-	for _, v := range pairs {
-		id, err := strconv.ParseInt(v.Key, 10, 64)
-		if err != nil || id == -1 {
-			continue
-		}
-		ids = append(ids, id)
-	}
-	return ids
-}
-
 func articlesToItems(models []*model.Article) []*content.SearchItem {
 	// 转换文章实体为搜索数据项
 	items := make([]*content.SearchItem, 0, len(models))
@@ -203,39 +178,6 @@ func articlesToItems(models []*model.Article) []*content.SearchItem {
 		})
 	}
 	return items
-}
-
-func paginateByTime(allArticles []*model.Article, cursor int64, pageSize int) ([]*model.Article, bool, int64) {
-	cursorTime := time.Unix(cursor, 0)
-
-	// 定位首个早于游标时间的文章索引
-	startIdx := len(allArticles)
-	for i, v := range allArticles {
-		if v.PublishTime.Before(cursorTime) {
-			startIdx = i
-			break
-		}
-	}
-
-	if startIdx >= len(allArticles) {
-		return nil, true, 0
-	}
-
-	endIdx := startIdx + pageSize
-	isEnd := false
-	if endIdx >= len(allArticles) {
-		endIdx = len(allArticles)
-		isEnd = true
-	}
-
-	page := allArticles[startIdx:endIdx]
-
-	var nextCursor int64
-	if !isEnd && len(page) > 0 {
-		nextCursor = page[len(page)-1].PublishTime.Unix()
-	}
-
-	return page, isEnd, nextCursor
 }
 
 // paginateByHot 基于文章ID锚点对已按热度排序的文章列表进行切片分页
@@ -334,22 +276,6 @@ func populateAuthorNames(ctx context.Context, svcCtx *svc.ServiceContext, items 
 			v.AuthorAvatar = info.avatar
 		}
 	}
-}
-
-func (l *SearchArticlesLogic) addCacheAllArticles(ctx context.Context, articles []*model.Article) error {
-	key := "biz#articles#global"
-	if len(articles) == 0 {
-		_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, key, 0, "-1")
-	} else {
-		// 批量缓存文章ID及发布时间
-		for _, v := range articles {
-			artIdStr := strconv.FormatInt(v.Id, 10)
-			_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, key, v.PublishTime.Unix(), artIdStr)
-		}
-		_, _ = l.svcCtx.BizRedis.ZaddCtx(ctx, key, 0, "-1")
-	}
-	_ = l.svcCtx.BizRedis.ExpireCtx(ctx, key, 3600*24*2)
-	return nil
 }
 
 // searchTwoPhase 第一阶段：ES 仅检索 ID；第二阶段：Redis MGet 详情物化

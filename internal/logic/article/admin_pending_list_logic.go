@@ -5,7 +5,6 @@ import (
 	"context"
 	"time"
 
-	"rpc-content/client/user/user"
 	"rpc-content/content"
 	"rpc-content/internal/svc"
 
@@ -66,7 +65,7 @@ func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListReq
 	}
 
 	if l.svcCtx.UserRPC != nil {
-		l.populateAuthorNames(items)
+		populateAuthorNames(l.ctx, l.svcCtx, items, l.Logger)
 	}
 
 	var cursor int64
@@ -82,15 +81,4 @@ func (l *AdminPendingListLogic) AdminPendingList(in *content.AdminPendingListReq
 	resp.Data.Cursor = cursor
 	resp.Data.IsEnd = isEnd
 	return resp, nil
-}
-
-func (l *AdminPendingListLogic) populateAuthorNames(items []*content.SearchItem) {
-	// 批量查询并填充文章作者名称
-	for _, v := range items {
-		u, err := l.svcCtx.UserRPC.FindById(l.ctx, &user.FindByIdRequest{UserId: v.AuthorId})
-		if err != nil {
-			continue
-		}
-		v.AuthorName = u.Username
-	}
 }

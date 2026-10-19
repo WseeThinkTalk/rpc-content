@@ -72,7 +72,9 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 	if b {
 		isCache = true
 		_ = l.svcCtx.BizRedis.ExpireCtx(l.ctx, key, 3600*24*2)
-		pairs, err := l.svcCtx.BizRedis.ZrevrangebyscoreWithScoresAndLimitCtx(l.ctx, key, 0, in.Cursor, 0, int(in.PageSize))
+		// 适当放大拉取数量，确保在裁剪掉游标锚点与同分重复文章后，仍然能凑齐满额的 PageSize
+		fetchLimit := int(in.PageSize)*2 + 50
+		pairs, err := l.svcCtx.BizRedis.ZrevrangebyscoreWithScoresAndLimitCtx(l.ctx, key, 0, in.Cursor, 0, fetchLimit)
 		if err != nil {
 			resp.Code = int64(code.ServerErr.Code())
 			resp.Msg = err.Error()
@@ -91,25 +93,14 @@ func (l *ArticlesLogic) Articles(in *content.ArticlesRequest) (resp *content.Art
 			scores = append(scores, score)
 		}
 
-		if len(articleIds) > 0 {
-			if articleIds[len(articleIds)-1] == -1 {
-				articleIds = articleIds[:len(articleIds)-1]
-				scores = scores[:len(scores)-1]
-				isEnd = true
-			}
+		hasSentinel := false
+		if len(articleIds) > 0 && articleIds[len(articleIds)-1] == -1 {
+			articleIds = articleIds[:len(articleIds)-1]
+			scores = scores[:len(scores)-1]
+			hasSentinel = true
 		}
 
-		curPageIds = articleIds
-
-		if in.Cursor > 0 && in.ArticleId > 0 && len(curPageIds) > 0 {
-			// 定位游标在当前缓存ID列表中的偏移量
-			for i, v := range curPageIds {
-				if scores[i] == in.Cursor && v == in.ArticleId {
-					curPageIds = curPageIds[i+1:]
-					break
-				}
-			}
-		}
+		curPageIds, isEnd = slicePageIds(articleIds, scores, in.Cursor, in.ArticleId, int(in.PageSize), hasSentinel)
 	} else {
 		articleModels, err = l.svcCtx.ArticleModel.ArticlesByUserIdWithoutCursor(l.ctx, in.UserId, -1)
 		if err != nil {
@@ -247,3 +238,30 @@ func (l *ArticlesLogic) addCacheArticles(ctx context.Context, userId int64, arti
 func articlesKey(uid int64, sortType int32) string {
 	return fmt.Sprintf("biz#articles#%d#%d", uid, sortType)
 }
+
+// slicePageIds 从缓存检索的候选ID中剔除游标锚点并精确截取单页条数
+func slicePageIds(articleIds, scores []int64, cursor, cursorArticleId int64, pageSize int, hasSentinel bool) ([]int64, bool) {
+	curPageIds := articleIds
+	if cursor > 0 && cursorArticleId > 0 && len(curPageIds) > 0 {
+		for i, v := range curPageIds {
+			if scores[i] == cursor && v == cursorArticleId {
+				curPageIds = curPageIds[i+1:]
+				break
+			}
+		}
+	}
+
+	var isEnd bool
+	var pageIds []int64
+	if len(curPageIds) > pageSize {
+		pageIds = curPageIds[:pageSize]
+		isEnd = false
+	} else {
+		pageIds = curPageIds
+		if hasSentinel || len(curPageIds) < pageSize {
+			isEnd = true
+		}
+	}
+	return pageIds, isEnd
+}
+

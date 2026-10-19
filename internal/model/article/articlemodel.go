@@ -24,7 +24,7 @@ type (
 		SearchArticles(ctx context.Context, keyword string, authorIds []int64, status int, limit int, cursor int64) ([]*Article, error)
 		ArticlesPending(ctx context.Context, limit int, cursor int64) ([]*Article, error)
 		FindByIds(ctx context.Context, ids []int64) ([]*Article, error)
-		ArticlesByCursor(ctx context.Context, status int, cursorTime time.Time, limit int) ([]*Article, error)
+		ArticlesByCursor(ctx context.Context, status int, cursorTime time.Time, limit int, cursorId ...int64) ([]*Article, error)
 	}
 
 	customArticleModel struct {
@@ -192,15 +192,19 @@ func (m *customArticleModel) ArticlesPending(ctx context.Context, limit int, cur
 	return articles, err
 }
 
-// ArticlesByCursor 基于发布时间游标分页拉取指定状态文章
-func (m *customArticleModel) ArticlesByCursor(ctx context.Context, status int, cursorTime time.Time, limit int) ([]*Article, error) {
+// ArticlesByCursor 基于发布时间与文章ID双游标分页拉取指定状态文章
+func (m *customArticleModel) ArticlesByCursor(ctx context.Context, status int, cursorTime time.Time, limit int, cursorId ...int64) ([]*Article, error) {
 	var articles []*Article
 	query := m.db.WithContext(ctx).Where("status = ?", status)
 	if !cursorTime.IsZero() {
-		// 过滤早于游标的数据
-		query = query.Where("publish_time < ?", cursorTime)
+		if len(cursorId) > 0 && cursorId[0] > 0 {
+			// 基于 (发布时间, 文章ID) 双游标过滤，解决同秒发布的文章在翻页时跳漏
+			query = query.Where("(publish_time < ? OR (publish_time = ? AND id < ?))", cursorTime, cursorTime, cursorId[0])
+		} else {
+			query = query.Where("publish_time < ?", cursorTime)
+		}
 	}
-	// 按发布时间倒序排序
+	// 按发布时间与文章ID倒序排序
 	err := query.Order("publish_time desc, id desc").Limit(limit).Find(&articles).Error
 	return articles, err
 }

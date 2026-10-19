@@ -64,3 +64,54 @@ func TestHydrateOrderPreserved(t *testing.T) {
 		t.Fatalf("预期物化保序结果为 [103, 101, 102]，实际为 %+v", ordered)
 	}
 }
+
+// TestPaginateByHot 测试基于文章ID锚点的热度榜单游标分页
+func TestPaginateByHot(t *testing.T) {
+	now := time.Now()
+	// 构造按点赞数倒序但时间无序的数据集
+	articles := []*model.Article{
+		{Id: 101, Title: "Top1", LikeNum: 100, PublishTime: now.Add(-2 * time.Hour)},
+		{Id: 102, Title: "Top2", LikeNum: 80, PublishTime: now.Add(-10 * time.Minute)}, // 时间比 Top1 新，但点赞少
+		{Id: 103, Title: "Top3", LikeNum: 80, PublishTime: now.Add(-30 * time.Minute)}, // 同赞
+		{Id: 104, Title: "Top4", LikeNum: 50, PublishTime: now.Add(-1 * time.Hour)},
+		{Id: 105, Title: "Top5", LikeNum: 10, PublishTime: now.Add(-5 * time.Minute)},
+	}
+
+	pageSize := 2
+
+	// 第 1 页：首屏
+	p1, isEnd1, cursor1 := paginateByHot(articles, 0, pageSize)
+	if len(p1) != 2 || p1[0].Id != 101 || p1[1].Id != 102 {
+		t.Fatalf("第 1 页期望 [101, 102]，实际 %+v", p1)
+	}
+	if isEnd1 {
+		t.Fatalf("第 1 页 isEnd 期望 false")
+	}
+	if cursor1 != 102 {
+		t.Fatalf("第 1 页下一页游标期望 102，实际 %d", cursor1)
+	}
+
+	// 第 2 页：同赞文章不跳漏
+	p2, isEnd2, cursor2 := paginateByHot(articles, cursor1, pageSize)
+	if len(p2) != 2 || p2[0].Id != 103 || p2[1].Id != 104 {
+		t.Fatalf("第 2 页期望 [103, 104]，实际 %+v", p2)
+	}
+	if isEnd2 {
+		t.Fatalf("第 2 页 isEnd 期望 false")
+	}
+	if cursor2 != 104 {
+		t.Fatalf("第 2 页下一页游标期望 104，实际 %d", cursor2)
+	}
+
+	// 第 3 页：到达末尾
+	p3, isEnd3, cursor3 := paginateByHot(articles, cursor2, pageSize)
+	if len(p3) != 1 || p3[0].Id != 105 {
+		t.Fatalf("第 3 页期望 [105]，实际 %+v", p3)
+	}
+	if !isEnd3 {
+		t.Fatalf("第 3 页 isEnd 期望 true")
+	}
+	if cursor3 != 0 {
+		t.Fatalf("末页游标期望 0，实际 %d", cursor3)
+	}
+}

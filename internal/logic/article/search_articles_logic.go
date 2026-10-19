@@ -71,11 +71,8 @@ func (l *SearchArticlesLogic) SearchArticles(in *content.SearchRequest) (resp *c
 				resp.Data.IsEnd = true
 				return resp, nil
 			}
-			if in.Cursor == 0 {
-				in.Cursor = time.Now().Unix()
-			}
 			var page []*model.Article
-			page, isEnd, cursor = paginateByTime(allModels, in.Cursor, int(in.PageSize))
+			page, isEnd, cursor = paginateByHot(allModels, in.Cursor, int(in.PageSize))
 			items = articlesToItems(page)
 		} else {
 			// 按发布时间游标分页
@@ -236,6 +233,48 @@ func paginateByTime(allArticles []*model.Article, cursor int64, pageSize int) ([
 	var nextCursor int64
 	if !isEnd && len(page) > 0 {
 		nextCursor = page[len(page)-1].PublishTime.Unix()
+	}
+
+	return page, isEnd, nextCursor
+}
+
+// paginateByHot 基于文章ID锚点对已按热度排序的文章列表进行切片分页
+func paginateByHot(allArticles []*model.Article, cursorId int64, pageSize int) ([]*model.Article, bool, int64) {
+	if len(allArticles) == 0 {
+		return nil, true, 0
+	}
+
+	startIdx := 0
+	if cursorId > 0 {
+		found := false
+		for i, v := range allArticles {
+			if v.Id == cursorId {
+				startIdx = i + 1
+				found = true
+				break
+			}
+		}
+		if !found {
+			startIdx = 0
+		}
+	}
+
+	if startIdx >= len(allArticles) {
+		return nil, true, 0
+	}
+
+	endIdx := startIdx + pageSize
+	isEnd := false
+	if endIdx >= len(allArticles) {
+		endIdx = len(allArticles)
+		isEnd = true
+	}
+
+	page := allArticles[startIdx:endIdx]
+
+	var nextCursor int64
+	if !isEnd && len(page) > 0 {
+		nextCursor = page[len(page)-1].Id
 	}
 
 	return page, isEnd, nextCursor
